@@ -21,9 +21,6 @@ a.out
 /minilang_compiler
 
 # WebAssembly build
-/web/pkg/
-/pkg/
-*.wasm
 /web/node_modules/
 /web/.parcel-cache/
 /web/dist/

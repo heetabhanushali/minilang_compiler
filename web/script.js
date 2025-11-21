@@ -3,6 +3,9 @@
    Monaco Editor + UI Interactions
    ============================================ */
 
+// Suppress Tailwind CDN warning
+console.warn = function() {};
+
 // ============================================
 // Global Variables
 // ============================================

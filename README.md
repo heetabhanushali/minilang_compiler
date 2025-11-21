@@ -9,7 +9,7 @@ A **statically-typed, compiled programming language** built entirely in Rust, fe
 
 ## 🎯 Live Demo
 
-**[Try MiniLang in your browser →](https://your-demo-url.com)**
+**[Try MiniLang in your browser →](https://minilang-playground.vercel.app/)**
 
 Experience the interactive playground with real-time compilation, AST visualization, and optimization statistics.
 
@@ -37,7 +37,7 @@ Experience the interactive playground with real-time compilation, AST visualizat
 
 ### Web Playground
 
-Visit the [online playground](https://your-demo-url.com) to start coding immediately, or run locally:
+Visit the [minilang playground](https://minilang-playground.vercel.app/) to start coding immediately, or run locally:
 
 ```bash
 cd web
