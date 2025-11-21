@@ -1,0 +1,28 @@
+{
+  "name": "minilang_compiler",
+  "type": "module",
+  "collaborators": [
+    "Heeta Bhanushali heetabhanushali@gmail.com"
+  ],
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heetabhanushali/minilang"
+  },
+  "files": [
+    "minilang_compiler_bg.wasm",
+    "minilang_compiler.js",
+    "minilang_compiler.d.ts"
+  ],
+  "main": "minilang_compiler.js",
+  "types": "minilang_compiler.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "compiler",
+    "programming-language",
+    "webassembly",
+    "rust"
+  ]
+}
