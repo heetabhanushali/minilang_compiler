@@ -110,3 +110,5 @@ core
 core.*
 vgcore.*
 callgrind.out.*
+
+.vercel
