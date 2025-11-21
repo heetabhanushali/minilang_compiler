@@ -1004,8 +1004,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         wasmModule = wasm;
         wasmCompile = wasm.compile;
-        
-        console.log('%cWASM Compiler Loaded!', 'color: #10B981; font-size: 14px; font-weight: bold;');
     } catch (error) {
         console.error('Failed to load WASM:', error);
         alert('Failed to load compiler. Please refresh the page.');
@@ -1030,7 +1028,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('clear-btn').addEventListener('click', clearEditor);
     document.getElementById('download-source-btn').addEventListener('click', downloadSource);
     document.getElementById('download-c-btn').addEventListener('click', downloadCCode);
-    
-    console.log('%cMiniLang Compiler Loaded!', 'color: #FBBF24; font-size: 16px; font-weight: bold;');
-    console.log('%cPress Ctrl/Cmd + Enter to compile', 'color: #94A3B8; font-size: 12px;');
 });
