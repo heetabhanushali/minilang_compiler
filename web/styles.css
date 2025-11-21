@@ -1,0 +1,1159 @@
+/* ============================================
+   MiniLang Compiler - Custom Styles
+   Theme: Yellow/Amber with Dark/Light Mode
+   ============================================ */
+
+/* ============================================
+   CSS Variables & Theme
+   ============================================ */
+:root {
+    --primary: #F59E0B;
+    --secondary: #D97706;
+    --accent: #FBBF24;
+    --success: #10B981;
+    --error: #EF4444;
+    --warning: #F97316;
+}
+
+/* Dark theme - default */
+html.dark {
+    --bg-primary: #020617;
+    --bg-secondary: #0F172A;
+    --bg-tertiary: #1E293B;
+    --bg-card: rgba(30, 41, 59, 0.6);
+    --bg-editor-header: rgba(15, 23, 42, 0.6);
+    
+    --text-primary: #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    
+    --border: rgba(255, 255, 255, 0.05);
+    --border-hover: rgba(251, 191, 36, 0.2);
+}
+
+html.dark body {
+    background-color: #020617;
+    color: #F1F5F9;
+}
+
+/* Light theme */
+html.light {
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F8FAFC;
+    --bg-tertiary: #F1F5F9;
+    --bg-card: #FFFFFF;
+    --bg-editor-header: #F1F5F9;
+    
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+    
+    --border: #E2E8F0;
+    --border-hover: rgba(245, 158, 11, 0.3);
+}
+
+html.light body {
+    background-color: #FFFFFF;
+    color: #0F172A;
+}
+
+/* Hide animated background in light mode */
+html.light #animated-bg {
+    display: none;
+}
+
+/* ============================================
+   Global Styles
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow-x: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+    background-color: var(--primary);
+    color: #FFFFFF;
+}
+
+::-moz-selection {
+    background-color: var(--primary);
+    color: #FFFFFF;
+}
+
+/* ============================================
+   Animated Background - LIGHT MODE FIX
+   ============================================ */
+.dark .fixed.inset-0 {
+    display: block;
+}
+
+.light .fixed.inset-0 {
+    display: none !important;
+}
+
+/* ============================================
+   Glass Morphism Effects
+   ============================================ */
+.glass-card {
+    backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark .glass-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 
+        0 8px 32px 0 rgba(0, 0, 0, 0.37),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+html.light .glass-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.glass-card:hover {
+    border-color: var(--border-hover);
+}
+
+html.dark .glass-card:hover {
+    box-shadow: 
+        0 8px 32px 0 rgba(0, 0, 0, 0.37),
+        0 0 0 1px rgba(251, 191, 36, 0.1),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+html.light .glass-card:hover {
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+.glass-header {
+    backdrop-filter: blur(20px) saturate(180%);
+}
+
+html.dark .glass-header {
+    background: rgba(2, 6, 23, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+html.light .glass-header {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.primary-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.primary-button:hover::before {
+    opacity: 1;
+}
+
+.primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+}
+
+.primary-button:active {
+    transform: translateY(0);
+}
+
+.primary-button svg,
+.primary-button span {
+    position: relative;
+    z-index: 1;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+}
+
+.dark .secondary-button {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+.light .secondary-button {
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+}
+
+.secondary-button:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+}
+
+.dark .secondary-button:hover {
+    background: rgba(51, 65, 85, 0.7);
+}
+
+.light .secondary-button:hover {
+    background: #F1F5F9;
+}
+
+.secondary-button:active {
+    transform: translateY(0);
+}
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.icon-button:hover {
+    color: var(--primary);
+}
+
+.dark .icon-button:hover {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.light .icon-button:hover {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+/* ============================================
+   Navigation
+   ============================================ */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--primary);
+}
+
+.dark .nav-link:hover {
+    background: rgba(251, 191, 36, 0.05);
+}
+
+.light .nav-link:hover {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.nav-link.active {
+    color: var(--primary);
+}
+
+.dark .nav-link.active {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.light .nav-link.active {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.nav-link.active::after {
+    width: 60%;
+}
+
+/* Mobile Navigation */
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link.active {
+    color: var(--primary);
+    border-left-color: var(--primary);
+}
+
+.dark .mobile-nav-link:hover,
+.dark .mobile-nav-link.active {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.light .mobile-nav-link:hover,
+.light .mobile-nav-link.active {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+/* ============================================
+   Optimization Level Buttons
+   ============================================ */
+.opt-level-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dark .opt-level-btn {
+    background: rgba(51, 65, 85, 0.3);
+}
+
+.light .opt-level-btn {
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+}
+
+.opt-level-btn:hover {
+    color: var(--primary);
+    border-color: var(--border-hover);
+}
+
+.dark .opt-level-btn:hover {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.light .opt-level-btn:hover {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.opt-level-btn.active {
+    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.opt-level-btn.active:hover {
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, var(--accent), var(--primary)) !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5) !important;
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   Output Tabs
+   ============================================ */
+.output-tab-btn {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.output-tab-btn:hover {
+    color: var(--primary);
+}
+
+.dark .output-tab-btn:hover {
+    background: rgba(251, 191, 36, 0.05);
+}
+
+.light .output-tab-btn:hover {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.output-tab-btn.active {
+    color: var(--primary);
+    border-color: var(--border-hover);
+}
+
+.dark .output-tab-btn.active {
+    background: rgba(251, 191, 36, 0.15);
+}
+
+.light .output-tab-btn.active {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ============================================
+   Editor Container
+   ============================================ */
+.editor-header {
+    padding: 0.875rem 1.25rem;
+    background: var(--bg-editor-header);
+    border-bottom: 1px solid var(--border);
+}
+
+html.dark .editor-header {
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+html.light .editor-header {
+    background: #F1F5F9;
+    border-bottom: 1px solid #CBD5E1;
+}
+
+.editor-container {
+    height: 500px;
+    min-height: 400px;
+}
+
+@media (max-width: 1024px) {
+    .editor-container {
+        height: 400px;
+        min-height: 300px;
+    }
+}
+
+/* ============================================
+   Output Content
+   ============================================ */
+.output-content {
+    display: none;
+    height: 100%;
+    overflow: auto;
+}
+
+.output-content.active {
+    display: block;
+}
+
+/* Custom scrollbar */
+.output-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark .output-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.light .output-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.output-content::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.3);
+    border-radius: 4px;
+}
+
+.output-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.5);
+}
+
+
+/* ============================================
+   Statistics Display
+   ============================================ */
+.stat-item {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.dark .stat-item {
+    background: rgba(15, 23, 42, 0.5);
+}
+
+.light .stat-item {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+}
+
+.stat-item:hover {
+    border-color: var(--border-hover);
+}
+
+.dark .stat-item:hover {
+    background: rgba(15, 23, 42, 0.7);
+}
+
+.light .stat-item:hover {
+    background: #F1F5F9;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.stat-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.dark .stat-bar {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+.light .stat-bar {
+    background: #E2E8F0;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+/* ============================================
+   Token Table Rows
+   ============================================ */
+#tokens-table tbody tr {
+    cursor: pointer;
+}
+
+.dark #tokens-table tbody tr:hover {
+    background: rgba(30, 41, 59, 0.8);
+}
+
+.light #tokens-table tbody tr:hover {
+    background: #FFFBEB;
+}
+
+/* ============================================
+   AST Interactive Tree Viewer
+   ============================================ */
+
+.ast-tree-container {
+    line-height: 1.8;
+}
+
+.ast-node-line {
+    padding: 0.125rem 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.ast-node-branch {
+    margin: 0.125rem 0;
+}
+
+.ast-node-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    padding: 0.125rem 0;
+    transition: background-color 0.2s ease;
+    border-radius: 0.25rem;
+    margin-left: -0.25rem;
+    padding-left: 0.25rem;
+}
+
+.dark .ast-node-header:hover {
+    background-color: rgba(251, 191, 36, 0.08);
+}
+
+.light .ast-node-header:hover {
+    background-color: rgba(245, 158, 11, 0.06);
+}
+
+.ast-toggle {
+    color: var(--primary);
+    font-weight: bold;
+    user-select: none;
+    cursor: pointer;
+    width: 1rem;
+    display: inline-block;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.ast-toggle:hover {
+    transform: scale(1.2);
+}
+
+.ast-key {
+    font-weight: 600;
+}
+
+.dark .ast-key {
+    color: #94A3B8;
+}
+
+.light .ast-key {
+    color: #64748B;
+}
+
+.ast-key-branch {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.ast-colon {
+    color: var(--text-muted);
+}
+
+.ast-bracket {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.ast-close-bracket {
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.125rem 0;
+}
+
+.ast-value-string {
+    color: var(--success);
+}
+
+.ast-value-number {
+    color: var(--warning);
+}
+
+.ast-value-boolean {
+    color: #A78BFA;
+    font-weight: 600;
+}
+
+.ast-value-null {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.ast-value-empty {
+    color: var(--text-muted);
+}
+
+.ast-collapsed-summary {
+    color: var(--text-muted);
+    font-size: 0.875em;
+    font-style: italic;
+}
+
+.ast-node-content {
+    border-left: 2px solid;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.dark .ast-node-content {
+    border-left-color: rgba(251, 191, 36, 0.15);
+}
+
+.light .ast-node-content {
+    border-left-color: rgba(245, 158, 11, 0.2);
+}
+
+.ast-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ============================================
+   Beautiful Scrollbars
+   ============================================ */
+
+/* Main scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.dark ::-webkit-scrollbar {
+    background: #0F172A;
+}
+
+.light ::-webkit-scrollbar {
+    background: #F8FAFC;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 10px;
+    margin: 2px;
+}
+
+.light ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 10px;
+    margin: 2px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    border-radius: 10px;
+    border: 2px solid #0F172A;
+}
+
+.light ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%);
+    border-radius: 10px;
+    border: 2px solid #FFFFFF;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
+}
+
+/* Scrollbar corner */
+.dark ::-webkit-scrollbar-corner {
+    background: #0F172A;
+}
+
+.light ::-webkit-scrollbar-corner {
+    background: #F8FAFC;
+}
+
+/* Firefox scrollbar */
+.dark * {
+    scrollbar-width: thin;
+    scrollbar-color: #F59E0B #0F172A;
+}
+
+.light * {
+    scrollbar-width: thin;
+    scrollbar-color: #FBBF24 #F1F5F9;
+}
+
+/* ============================================
+   Tab Content
+   ============================================ */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Footer Links
+   ============================================ */
+
+footer {
+    border-top: 1px solid var(--border);
+}
+
+html.dark footer {
+    background: rgba(2, 6, 23, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+html.light footer {
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+}
+
+.footer-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.footer-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    transition: width 0.3s ease;
+}
+
+.footer-link:hover {
+    color: var(--primary);
+}
+
+.footer-link:hover::after {
+    width: 100%;
+}
+
+/* ============================================
+   Loading Overlay
+   ============================================ */
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(245, 158, 11, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   Gradient Animation
+   ============================================ */
+.animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* ============================================
+   Example Cards
+   ============================================ */
+.example-card {
+    padding: 1.5rem;
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .example-card {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+.light .example-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+}
+
+.example-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-hover);
+}
+
+.dark .example-card:hover {
+    box-shadow: 
+        0 12px 32px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(251, 191, 36, 0.1);
+}
+
+.light .example-card:hover {
+    box-shadow: 
+        0 12px 32px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+.example-card-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.example-card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.example-card-code {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    overflow-x: auto;
+}
+
+.dark .example-card-code {
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .example-card-code {
+    background: #F8FAFC;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+}
+
+/* ============================================
+   Success/Error Messages
+   ============================================ */
+.message-success {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 0.75rem;
+    color: var(--success);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.dark .message-success {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.light .message-success {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.message-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 0.75rem;
+    color: var(--error);
+    font-size: 0.875rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: pre-wrap;
+}
+
+.dark .message-error {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.light .message-error {
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ============================================
+   Code Syntax Highlighting
+   ============================================ */
+code {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+pre code {
+    display: block;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.dark pre {
+    background: rgba(15, 23, 42, 0.8);
+    color: #CBD5E1;
+}
+
+.light pre {
+    background: #F8FAFC;
+    color: #334155;
+    border: 1px solid #E2E8F0;
+}
+
+/* Inline code styling - ONLY for actual inline code in text */
+.light p > code,
+.light li > code,
+.light td > code {
+    background: #F1F5F9;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    border: 1px solid #E2E8F0;
+    color: #0F172A;
+}
+
+.dark p > code,
+.dark li > code,
+.dark td > code {
+    background: rgba(51, 65, 85, 0.5);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    color: #F1F5F9;
+}
+
+/* Example card code should NOT have styling */
+.example-card-code code {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+
+/* ============================================
+   Responsive Utilities
+   ============================================ */
+@media (max-width: 640px) {
+    .primary-button,
+    .secondary-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+    }
+    
+    .glass-card {
+        border-radius: 12px;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+    .glass-header,
+    footer,
+    .primary-button,
+    .secondary-button,
+    .nav-link {
+        display: none;
+    }
+    
+    .glass-card {
+        border: 1px solid #ccc;
+        box-shadow: none;
+    }
+}

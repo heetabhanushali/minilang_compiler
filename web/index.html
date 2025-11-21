@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniLang Compiler - Interactive Playground</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="MiniLang - A modern compiled programming language with unique syntax and powerful optimizations. Try it live in your browser!">
+    <meta name="keywords" content="compiler, programming language, rust, webassembly, minilang">
+    <meta name="author" content="Your Name">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="MiniLang Compiler Playground">
+    <meta property="og:description" content="Try MiniLang - A compiled language with AND/OR/NOT operators and 4 optimization techniques">
+    <meta property="og:type" content="website">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
+    
+    <!-- Tailwind CSS - Using CDN with production build -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script>
+        // Suppress development warning for demo purposes
+        tailwind.config = {
+            ...tailwind.config,
+            corePlugins: {
+                preflight: true,
+            }
+        }
+    </script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FBBF24',
+                        secondary: '#F59E0B',
+                        accent: '#FCD34D',
+                        success: '#10B981',
+                        error: '#EF4444',
+                        warning: '#F97316',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans antialiased">
+    
+    <!-- Animated Background - Only in dark mode -->
+    <div id="animated-bg" class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-header sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <div class="logo-container relative">
+                        <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
+                        <svg class="w-10 h-10 sm:w-12 sm:h-12 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="10" y="10" width="80" height="80" rx="15" stroke="url(#gradient)" stroke-width="4" fill="none"/>
+                            <path d="M 35 45 L 50 60 L 65 45" stroke="url(#gradient)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="50" cy="35" r="4" fill="url(#gradient)"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#FBBF24;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient">
+                            MiniLang
+                        </h1>
+                        <p class="text-xs sm:text-sm dark:text-slate-400 text-slate-600 font-medium">Interactive Compiler Playground</p>
+                    </div>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden lg:flex items-center space-x-1">
+                    <button class="nav-link active" data-tab="playground">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                        </svg>
+                        <span>Playground</span>
+                    </button>
+                    <button class="nav-link" data-tab="examples">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span>Examples</span>
+                    </button>
+                    <button class="nav-link" data-tab="docs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Docs</span>
+                    </button>
+                    <button class="nav-link" data-tab="about">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>About</span>
+                    </button>
+                </nav>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Mobile Menu -->
+                    <button id="mobile-menu-btn" class="lg:hidden icon-button">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="icon-button" title="Toggle theme">
+                        <svg class="w-5 h-5 dark-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                        <svg class="w-5 h-5 light-icon hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- GitHub -->
+                    <a href="https://github.com/heetabhanushali/minilang" target="_blank" class="icon-button hidden sm:flex" title="View on GitHub">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <div id="mobile-menu" class="lg:hidden hidden mt-4 pb-4 border-t dark:border-slate-800 border-slate-200 pt-4">
+                <div class="flex flex-col space-y-2">
+                    <button class="mobile-nav-link active" data-tab="playground">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                        </svg>
+                        Playground
+                    </button>
+                    <button class="mobile-nav-link" data-tab="examples">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        Examples
+                    </button>
+                    <button class="mobile-nav-link" data-tab="docs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Documentation
+                    </button>
+                    <button class="mobile-nav-link" data-tab="about">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        About
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 relative z-10">
+        
+        <!-- Playground Tab -->
+        <div id="playground-tab" class="tab-content active">
+            
+            <!-- Controls Bar -->
+            <div class="glass-card mb-4 lg:mb-6 p-3 lg:p-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 lg:gap-4">
+                    <!-- Optimization Level -->
+                    <div class="flex items-center space-x-3 lg:space-x-4">
+                        <span class="text-xs lg:text-sm font-medium dark:text-slate-300 text-slate-700">Optimization:</span>
+                        <div class="flex space-x-2">
+                            <button class="opt-level-btn active" data-level="0">
+                                <span class="hidden sm:inline">Level </span>0
+                            </button>
+                            <button class="opt-level-btn" data-level="1">
+                                <span class="hidden sm:inline">Level </span>1
+                            </button>
+                            <button class="opt-level-btn" data-level="2">
+                                <span class="hidden sm:inline">Level </span>2
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-2 lg:space-x-3">
+                        <button id="compile-btn" class="primary-button flex-1 sm:flex-none">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Compile</span>
+                        </button>
+                        
+                        <button id="clear-btn" class="secondary-button">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span class="hidden sm:inline">Clear</span>
+                        </button>
+                        
+                        <button id="download-source-btn" class="secondary-button">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span class="hidden lg:inline">Source</span>
+                        </button>
+
+                        <button id="download-c-btn" class="secondary-button hidden">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span class="hidden lg:inline">C Code</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor & Output Grid -->
+            <div class="grid lg:grid-cols-2 gap-4 lg:gap-6">
+                
+                <!-- Left: Code Editor -->
+                <div class="glass-card overflow-hidden order-1">
+                    <div class="editor-header">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="flex space-x-1.5">
+                                    <div class="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition cursor-pointer"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 transition cursor-pointer"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500 hover:bg-green-400 transition cursor-pointer"></div>
+                                </div>
+                                <span class="ml-2 text-xs lg:text-sm font-mono font-medium text-primary">main.mini</span>
+                            </div>
+                            <span class="text-xs dark:text-slate-500 text-slate-400 hidden sm:block">MiniLang Editor</span>
+                        </div>
+                    </div>
+                    <div id="editor" class="editor-container"></div>
+                </div>
+
+                <!-- Right: Output Panel -->
+                <div class="glass-card flex flex-col order-2 overflow-hidden">
+                    <div class="editor-header">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs lg:text-sm font-medium">Output</span>
+                            <div class="flex space-x-1">
+                                <button class="output-tab-btn active" data-output="result">
+                                    <span class="hidden sm:inline">Result</span>
+                                    <span class="sm:hidden">Out</span>
+                                </button>
+                                <button class="output-tab-btn" data-output="c-code">
+                                    <span class="hidden sm:inline">C Code</span>
+                                    <span class="sm:hidden">C</span>
+                                </button>
+                                <button class="output-tab-btn" data-output="tokens">
+                                    <span class="hidden sm:inline">Tokens</span>
+                                    <span class="sm:hidden">🔤</span>
+                                </button>
+                                <button class="output-tab-btn" data-output="ast">
+                                    <span class="hidden sm:inline">AST</span>
+                                    <span class="sm:hidden">🌳</span>
+                                </button>
+                                <button class="output-tab-btn" data-output="stats">
+                                    <span class="hidden sm:inline">Stats</span>
+                                    <span class="sm:hidden">📊</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-hidden">
+                        <!-- Result Tab -->
+                        <div id="output-result" class="output-content active">
+                            <div class="p-4 lg:p-6 h-full flex items-center justify-center">
+                                <div class="text-center dark:text-slate-400 text-slate-600">
+                                    <div class="relative mx-auto mb-4 w-16 h-16 lg:w-20 lg:h-20">
+                                        <div class="absolute inset-0 bg-primary/10 rounded-2xl animate-pulse"></div>
+                                        <svg class="w-16 h-16 lg:w-20 lg:h-20 relative z-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-lg font-medium dark:text-slate-300 text-slate-700">Ready to compile</p>
+                                    <p class="text-sm mt-2 dark:text-slate-400 text-slate-600">Write MiniLang code and click <span class="text-primary font-semibold">Compile</span></p>
+                                    <p class="text-xs mt-3 dark:text-slate-500 text-slate-500">Or press <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Ctrl</kbd> + <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Enter</kbd></p>
+                                    <button class="mt-4 text-xs text-primary hover:text-secondary transition" data-tab="examples">
+                                        Try an example →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- C Code Tab -->
+                        <div id="output-c-code" class="output-content">
+                            <pre class="p-4 lg:p-6 font-mono text-xs lg:text-sm overflow-auto h-full dark:text-slate-300 text-slate-700"><code id="c-code-display">// Generated C code will appear here after compilation</code></pre>
+                        </div>
+                        
+                        <!-- Stats Tab -->
+                        <div id="output-stats" class="output-content">
+                            <div class="p-4 lg:p-6 space-y-3 lg:space-y-4">
+                                <h3 class="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-primary">Optimization Statistics</h3>
+                                
+                                <div class="stat-item">
+                                    <div class="flex items-center justify-between">
+                                        <span class="stat-label">Constants Folded</span>
+                                        <span class="stat-value" id="stat-constants">0</span>
+                                    </div>
+                                    <div class="stat-bar mt-2">
+                                        <div class="stat-bar-fill" id="bar-constants" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-item">
+                                    <div class="flex items-center justify-between">
+                                        <span class="stat-label">Dead Code Removed</span>
+                                        <span class="stat-value" id="stat-deadcode">0</span>
+                                    </div>
+                                    <div class="stat-bar mt-2">
+                                        <div class="stat-bar-fill" id="bar-deadcode" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-item">
+                                    <div class="flex items-center justify-between">
+                                        <span class="stat-label">Constants Propagated</span>
+                                        <span class="stat-value" id="stat-propagated">0</span>
+                                    </div>
+                                    <div class="stat-bar mt-2">
+                                        <div class="stat-bar-fill" id="bar-propagated" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-item">
+                                    <div class="flex items-center justify-between">
+                                        <span class="stat-label">Strength Reductions</span>
+                                        <span class="stat-value" id="stat-strength">0</span>
+                                    </div>
+                                    <div class="stat-bar mt-2">
+                                        <div class="stat-bar-fill" id="bar-strength" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 pt-4 border-t dark:border-slate-700 border-slate-300">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="dark:text-slate-400 text-slate-600">Total Optimizations</span>
+                                        <span class="text-lg font-bold text-primary" id="stat-total">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tokens Tab -->
+                        <div id="output-tokens" class="output-content">
+                            <div class="p-4 lg:p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-primary">Tokens</h3>
+                                    <span class="text-sm dark:text-slate-400 text-slate-600" id="token-count">0 tokens</span>
+                                </div>
+                                <div class="overflow-auto" style="max-height: 450px;">
+                                    <table class="w-full text-sm font-mono">
+                                        <thead class="sticky top-0 dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-700">
+                                            <tr>
+                                                <th class="text-left p-2">#</th>
+                                                <th class="text-left p-2">Type</th>
+                                                <th class="text-left p-2">Value</th>
+                                                <th class="text-left p-2">Line</th>
+                                                <th class="text-left p-2">Col</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tokens-table" class="dark:text-slate-300 text-slate-700">
+                                            <tr>
+                                                <td colspan="5" class="text-center p-8 dark:text-slate-500 text-slate-400">
+                                                    No tokens yet. Compile your code first.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AST Tab -->
+                        <div id="output-ast" class="output-content">
+                            <div class="p-4 lg:p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-primary">Abstract Syntax Tree</h3>
+                                    <div class="flex gap-1">
+                                        <button id="collapse-all-btn" class="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-primary hover:text-secondary transition px-2 py-1 rounded dark:hover:bg-primary/10 hover:bg-primary/5">
+                                            Collapse All
+                                        </button>
+                                        <span class="dark:text-slate-600 text-slate-300">|</span>
+                                        <button id="expand-all-btn" class="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-primary hover:text-secondary transition px-2 py-1 rounded dark:hover:bg-primary/10 hover:bg-primary/5">
+                                            Expand All
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="ast-display" class="font-mono text-xs lg:text-sm overflow-auto dark:text-slate-300 text-slate-700 dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200" style="max-height: 450px;">
+                                    <div class="ast-placeholder">// AST will appear here after compilation</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Examples Tab -->
+        <div id="examples-tab" class="tab-content">
+            <div class="mb-6">
+                <h2 class="text-2xl lg:text-3xl font-bold mb-2">Example Programs</h2>
+                <p class="dark:text-slate-400 text-slate-600">Click any example to load it into the editor</p>
+            </div>
+            <div id="examples-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                <!-- Examples will be injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Docs Tab -->
+        <div id="docs-tab" class="tab-content">
+            <div class="glass-card p-6 lg:p-8">
+                <h2 class="text-2xl lg:text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Language Reference</h2>
+                
+                <div class="space-y-8 dark:text-slate-300 text-slate-700">
+                    <!-- Syntax Overview -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Syntax Overview</h3>
+                        <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                            <ul class="space-y-2 text-sm">
+                                <li>• <span class="text-accent font-semibold">Comments:</span> <code class="text-success">#</code> for single-line, <code class="text-success">## ... ##</code> for multi-line</li>
+                                <li>• <span class="text-accent font-semibold">Keywords:</span> <code class="text-primary">func, let, if, else, while, do, for, display, send</code></li>
+                                <li>• <span class="text-accent font-semibold">Logical Operators:</span> <code class="text-warning">AND, OR, NOT</code> (readable words, not symbols!)</li>
+                                <li>• <span class="text-accent font-semibold">Types:</span> <code class="text-cyan-400">int, float, string, bool</code></li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <!-- Variables -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Variables</h3>
+                        <pre class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200 text-sm font-mono overflow-x-auto dark:text-slate-300 text-slate-700"><code>let x: int = 10;
+let name: string = "MiniLang";
+let pi: float = 3.14;
+let isActive: bool = true;</code></pre>
+                    </section>
+
+                    <!-- Functions -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Functions</h3>
+                        <pre class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200 text-sm font-mono overflow-x-auto dark:text-slate-300 text-slate-700"><code>func add(a: int, b: int) -> int {
+    send a + b;
+}
+
+func main() {
+    let result: int = add(5, 3);
+    display "Result: ", result;
+}</code></pre>
+                    </section>
+
+                    <!-- Control Flow -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Control Flow</h3>
+                        <pre class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200 text-sm font-mono overflow-x-auto dark:text-slate-300 text-slate-700"><code># If-Else
+if x > 10 {
+    display "Greater";
+} else {
+    display "Smaller";
+}
+
+# While Loop
+while i < 10 {
+    display i;
+    i = i + 1;
+}
+
+# For Loop
+for i = 0; i < 10; i = i + 1 {
+    display i;
+}</code></pre>
+                    </section>
+
+                    <!-- Optimizations -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Optimizations</h3>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Constant Folding</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Evaluates constant expressions at compile time</p>
+                                <code class="text-xs text-green-500 dark:text-green-400 mt-2 block font-mono">let x = 5 + 3; → let x = 8;</code>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Dead Code Elimination</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Removes unreachable code branches</p>
+                                <code class="text-xs text-green-500 dark:text-green-400 mt-2 block font-mono">if false { ... } → removed</code>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Constant Propagation</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Replaces variables with known constant values</p>
+                                <code class="text-xs text-green-500 dark:text-green-400 mt-2 block font-mono">x = 5; y = x; → y = 5;</code>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Strength Reduction</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Replaces expensive ops with cheaper ones</p>
+                                <code class="text-xs text-green-500 dark:text-green-400 mt-2 block font-mono">x * 2 → x << 1</code>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="about-tab" class="tab-content">
+            <div class="glass-card p-6 lg:p-8">
+                <h2 class="text-2xl lg:text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">About MiniLang</h2>
+                
+                <div class="space-y-6 dark:text-slate-300 text-slate-700">
+                    <p class="text-lg leading-relaxed">
+                        MiniLang is a <span class="text-primary font-semibold">statically-typed compiled programming language</span> built entirely in Rust. 
+                        It features unique syntax with Pascal-style logical operators (<code class="text-warning">AND/OR/NOT</code>), 
+                        Python-style comments (<code class="text-success">#</code>), and distinctive keywords 
+                        (<code class="text-primary">display/send</code>) that give it a unique identity.
+                    </p>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="dark:bg-slate-900/50 bg-slate-50 p-6 rounded-lg border dark:border-slate-800 border-slate-200">
+                            <h3 class="text-lg font-bold text-primary mb-3">Features</h3>
+                            <ul class="space-y-2 text-sm">
+                                <li>✓ Static type checking</li>
+                                <li>✓ 4 optimization techniques</li>
+                                <li>✓ Compiles to C (near-native performance)</li>
+                                <li>✓ Beautiful error messages</li>
+                                <li>✓ Runs in browser via WebAssembly</li>
+                            </ul>
+                        </div>
+
+                        <div class="dark:bg-slate-900/50 bg-slate-50 p-6 rounded-lg border dark:border-slate-800 border-slate-200">
+                            <h3 class="text-lg font-bold text-primary mb-3">Tech Stack</h3>
+                            <ul class="space-y-2 text-sm">
+                                <li>• <span class="text-accent">Rust</span> - Compiler implementation</li>
+                                <li>• <span class="text-accent">Logos</span> - Lexer generation</li>
+                                <li>• <span class="text-accent">WebAssembly</span> - Browser execution</li>
+                                <li>• <span class="text-accent">Monaco</span> - Code editor</li>
+                                <li>• <span class="text-accent">Miette</span> - Error reporting</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="dark:bg-slate-900/50 bg-slate-50 p-6 rounded-lg border dark:border-slate-800 border-slate-200">
+                        <h3 class="text-lg font-bold text-primary mb-3">Compiler Pipeline</h3>
+                        <div class="flex flex-wrap items-center gap-2 text-sm">
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Source Code</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Lexer</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Parser</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Type Checker</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Optimizer</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">C Codegen</span>
+                            <span class="text-primary font-bold">→</span>
+                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Executable</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center pt-6 border-t dark:border-slate-800 border-slate-200">
+                        <p class="text-sm dark:text-slate-400 text-slate-600 mb-4">Built with ❤️ as a portfolio project demonstrating compiler design and systems programming</p>
+                        <div class="flex justify-center gap-4">
+                            <a href="https://github.com/heetabhanushali/minilang" target="_blank" class="px-6 py-2 dark:bg-slate-800 bg-slate-100 dark:hover:bg-slate-700 hover:bg-slate-200 rounded-lg transition text-sm font-semibold">
+                                View on GitHub
+                            </a>
+                            <a href="https://heetabhanushali.github.io" target="_blank" class="px-6 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition text-sm font-semibold">
+                                My Portfolio
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 lg:mt-20 border-t dark:border-slate-800/50 border-slate-200 dark:bg-slate-950/50 bg-white backdrop-blur-xl relative z-10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="dark:text-slate-400 text-slate-600 text-xs lg:text-sm text-center md:text-left">
+                    Built with <span class="text-error">❤️</span> using <span class="text-primary font-semibold">Rust</span> & <span class="text-secondary font-semibold">WebAssembly</span>
+                </p>
+                <div class="flex flex-wrap justify-center gap-4 lg:gap-6">
+                    <a href="https://github.com/heetabhanushali/minilang" class="footer-link">GitHub</a>
+                    <a href="https://heetabhanushali.github.io" class="footer-link">Portfolio</a>
+                    <a href="mailto:heetabhanushali@gmail.com" class="footer-link">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    
+    <!-- Main Script -->
+    <script type="module" src="script.js"></script>
+    
+</body>
+</html>

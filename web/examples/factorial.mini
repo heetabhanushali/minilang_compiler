@@ -1,0 +1,12 @@
+# Factorial calculation
+
+func factorial(n: int) -> int {
+    if n <= 1 {
+        send 1;
+    }
+    send n * factorial(n - 1);
+}
+
+func main() {
+    display "5! = ", factorial(5);
+}

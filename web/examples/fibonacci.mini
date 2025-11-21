@@ -1,0 +1,14 @@
+# Fibonacci sequence
+
+func fibonacci(n: int) -> int {
+    if n <= 0 {
+        send 0;
+    } else if n == 1 {
+        send 1;
+    }
+    send fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+func main() {
+    display "Fibonacci(10) = ", fibonacci(10);
+}

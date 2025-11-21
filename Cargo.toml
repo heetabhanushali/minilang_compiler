@@ -1,0 +1,38 @@
+[package]
+name = "minilang_compiler"
+version = "0.1.0"
+edition = "2021"
+authors = ["Heeta Bhanushali heetabhanushali@gmail.com"]
+repository = "https://github.com/heetabhanushali/minilang"
+keywords = ["compiler", "programming-language", "webassembly", "rust"]
+categories = ["compilers", "wasm", "command-line-utilities"]
+default-run = "minilang"
+
+[[bin]]
+name = "minilang"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.51", features = ["derive"] }
+colored = "3.0.0"
+console_error_panic_hook = "0.1.7"
+logos = "0.15.1"
+miette = { version = "7.6.0", features = ["fancy"] }
+notify = "8.2.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+thiserror = "2.0.17"
+wasm-bindgen = "0.2.105"
+
+
+[dev-dependencies]
+insta = "1.43.2"
+pretty_assertions = "1.4.1"
+tempfile = "3.23.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization

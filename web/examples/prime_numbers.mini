@@ -1,0 +1,31 @@
+# Prime number checker
+
+func isPrime(n: int) -> bool {
+    if n <= 1 {
+        send false;
+    }
+    
+    if n == 2 {
+        send true;
+    }
+    
+    if n % 2 == 0 {
+        send false;
+    }
+    
+    for i = 3; i * i <= n; i = i + 2 {
+        if n % i == 0 {
+            send false;
+        }
+    }
+    
+    send true;
+}
+
+func main() {
+    for n = 2; n <= 20; n = n + 1 {
+        if isPrime(n) {
+            display n, " is prime";
+        }
+    }
+}
