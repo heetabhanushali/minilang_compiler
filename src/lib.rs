@@ -10,6 +10,8 @@ pub mod type_checker;
 pub mod codegen;
 pub mod cli;
 pub mod optimizer;
+
+#[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
 // Re-export main types for easier use

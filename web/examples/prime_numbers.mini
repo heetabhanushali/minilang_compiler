@@ -1,31 +1,30 @@
 # Prime number checker
 
-func isPrime(n: int) -> bool {
-    if n <= 1 {
-        send false;
-    }
+func is_prime(n: int) -> bool {
+    if n <= 1 { send false; }
+    if n <= 3 { send true; }
+    if n % 2 == 0 OR n % 3 == 0 { send false; }
     
-    if n == 2 {
-        send true;
-    }
-    
-    if n % 2 == 0 {
-        send false;
-    }
-    
-    for i = 3; i * i <= n; i = i + 2 {
-        if n % i == 0 {
+    for let i: int = 5; i * i <= n; i = i + 6 {
+        if n % i == 0 OR n % (i + 2) == 0 {
             send false;
         }
     }
-    
     send true;
 }
 
 func main() {
-    for n = 2; n <= 20; n = n + 1 {
-        if isPrime(n) {
-            display n, " is prime";
+    display "Primes ≤ 100:\n\n";
+    
+    let count: int = 0;
+    for let num: int = 2; num <= 100; num = num + 1 {
+        if is_prime(num) {
+            display num, " ";
+            count = count + 1;
+            if count % 10 == 0 {
+                display "\n";
+            }
         }
     }
+    display "\n\nTotal: ", count, " primes\n";
 }

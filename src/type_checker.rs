@@ -11,7 +11,7 @@ pub struct TypeChecker {
     symbol_table: SymbolTable,
     errors: Vec<SemanticError>,
     warnings: Vec<CompilerWarning>,
-    variable_usage: HashMap<String, bool>,
+    variable_usage: Vec<HashMap<String, bool>>,
     current_function: Option<String>,
     current_return_type: Option<Type>,
     loop_depth: usize,
@@ -24,7 +24,7 @@ impl TypeChecker {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
             warnings: Vec::new(),
-            variable_usage: HashMap::new(),
+            variable_usage: vec![HashMap::new()],
             current_function: None,
             current_return_type: None,
             loop_depth: 0,
@@ -84,6 +84,7 @@ impl TypeChecker {
         
         // Enter function scope
         self.symbol_table.enter_scope();
+        self.variable_usage.push(HashMap::new());
         
         // Add parameters to scope
         for param in &function.params {
@@ -119,8 +120,8 @@ impl TypeChecker {
         }
         
         self.check_unused_variables();
-        // Exit function scope
         self.symbol_table.exit_scope();
+        self.variable_usage.pop();
         
         // Clear function context
         self.current_function = None;
@@ -196,8 +197,10 @@ impl TypeChecker {
             }
             Statement::Block(block) => {
                 self.symbol_table.enter_scope();
+                self.variable_usage.push(HashMap::new());
                 let _ = self.check_block(block);
                 self.check_unused_variables();
+                self.variable_usage.pop();
                 self.symbol_table.exit_scope();
                 Ok(())
             }
@@ -316,7 +319,9 @@ impl TypeChecker {
             scope_level: self.symbol_table.current_scope_level(),
             defined_at: stmt.span.start,
         };
-        self.variable_usage.insert(stmt.name.clone(), false);
+        if let Some(current_scope) = self.variable_usage.last_mut() {
+            current_scope.insert(stmt.name.clone(), false);
+        }
         
         if let Err(_) = self.symbol_table.insert(symbol) {
             self.errors.push(SemanticError::DuplicateDefinition {
@@ -353,15 +358,19 @@ impl TypeChecker {
         
         // Check then block
         self.symbol_table.enter_scope();
+        self.variable_usage.push(HashMap::new());
         let _ = self.check_block(&stmt.then_block);
         self.check_unused_variables();
+        self.variable_usage.pop();
         self.symbol_table.exit_scope();
         
         // Check else block if present
         if let Some(else_block) = &stmt.else_block {
             self.symbol_table.enter_scope();
+            self.variable_usage.push(HashMap::new());
             let _ = self.check_block(else_block);
             self.check_unused_variables();
+            self.variable_usage.pop();
             self.symbol_table.exit_scope();
         }
         
@@ -383,10 +392,12 @@ impl TypeChecker {
         
         // Check body
         self.symbol_table.enter_scope();
+        self.variable_usage.push(HashMap::new());
         self.loop_depth += 1;
         let _ = self.check_block(&stmt.body);
         self.loop_depth -= 1;
         self.check_unused_variables();
+        self.variable_usage.pop();
         self.symbol_table.exit_scope();
         
         Ok(())
@@ -396,10 +407,12 @@ impl TypeChecker {
     fn check_do_while_statement(&mut self, stmt: &DoWhileStmt) -> Result<(), ()> {
         // Check body
         self.symbol_table.enter_scope();
+        self.variable_usage.push(HashMap::new());
         self.loop_depth += 1;
         let _ = self.check_block(&stmt.body);
         self.loop_depth -= 1;
         self.check_unused_variables();
+        self.variable_usage.pop();
         self.symbol_table.exit_scope();
         
         // Check condition is boolean
@@ -419,6 +432,7 @@ impl TypeChecker {
     /// Check for statement
     fn check_for_statement(&mut self, stmt: &ForStmt) -> Result<(), ()> {
         self.symbol_table.enter_scope();
+        self.variable_usage.push(HashMap::new());
         
         // Check init
         if let Some(init) = &stmt.init {
@@ -448,6 +462,7 @@ impl TypeChecker {
         let _ = self.check_block(&stmt.body);
         self.loop_depth -= 1;
         self.check_unused_variables();
+        self.variable_usage.pop();
         self.symbol_table.exit_scope();
         Ok(())
     }
@@ -850,14 +865,25 @@ impl TypeChecker {
 
     /// Mark a variable as used
     fn mark_variable_used(&mut self, name: &str) {
-        self.variable_usage.insert(name.to_string(), true);
+        for scope in self.variable_usage.iter_mut().rev() {
+            if scope.contains_key(name) {
+                scope.insert(name.to_string(), true);
+                return;
+            }
+        }
     }
 
     /// Check for unused variables at scope exit
     fn check_unused_variables(&mut self) {
+        let current_usage = self.variable_usage.last();
+        
         for (name, symbol) in self.symbol_table.current_scope_symbols() {
-            if !self.variable_usage.get(&name).unwrap_or(&false) {
-                // Don't warn about parameters or special variables
+            let is_used = current_usage
+                .and_then(|scope| scope.get(&name))
+                .copied()
+                .unwrap_or(true);  // Default to true (no warning) if not found
+            
+            if !is_used {
                 if !matches!(symbol.symbol_type, SymType::Parameter) && !name.starts_with("_") {
                     self.warnings.push(CompilerWarning::UnusedVariable {
                         name: name.clone(),

@@ -566,16 +566,19 @@ fn compile_source(
         Ok(()) => {
             if show_details {
                 println!("   ✅ Type checking passed!");
-                
-                let warnings = type_checker.get_warnings();
-                if warnings.is_empty() {
-                    println!("   No type errors or warnings");
-                } else {
+            }
+            
+            // Always show warnings, not just in detail mode
+            let warnings = type_checker.get_warnings();
+            if !warnings.is_empty() {
+                if show_details {
                     println!("   ⚠️ {} warning(s) found", warnings.len());
-                    for warning in warnings {
-                        warning.display(source, filename);
-                    }
                 }
+                for warning in warnings {
+                    warning.display(source, filename);
+                }
+            } else if show_details {
+                println!("   No type errors or warnings");
             }
         }
         Err(errors) => {

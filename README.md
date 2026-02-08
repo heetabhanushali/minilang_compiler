@@ -1,4 +1,4 @@
-# MiniLang Compiler 🚀
+# MiniLang Compiler
 
 [![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/yourusername/minilang)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange)](https://www.rust-lang.org/)
@@ -7,13 +7,20 @@
 
 A **statically-typed, compiled programming language** built entirely in Rust, featuring a unique syntax with Pascal-style logical operators (`AND`/`OR`/`NOT`) and a complete compiler pipeline from source to native executable.
 
-## 🎯 Live Demo
+## Web Playground
+
+The online playground compiles MiniLang to C using WebAssembly, then executes the generated C code via the [Piston API](https://emkc.org/api/v2/piston/runtimes) — a free, open-source code execution engine.
+
+**Note:** Code execution requires an internet connection. The Piston API runs your code in a sandboxed environment with:
+- 5 second execution timeout
+- 10 second compilation timeout
+- Memory limits for safety
 
 **[Try MiniLang in your browser →](https://minilang-playground.vercel.app/)**
 
 Experience the interactive playground with real-time compilation, AST visualization, and optimization statistics.
 
-## ✨ Features
+## Features
 
 ### Language Features
 - **Unique Readable Syntax**: `AND`/`OR`/`NOT` operators for better readability
@@ -33,7 +40,7 @@ Experience the interactive playground with real-time compilation, AST visualizat
 - **Multiple Backends**: Compile to C or run directly via WebAssembly
 - **Interactive Debugging**: Step through compilation phases
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Web Playground
 
@@ -61,7 +68,7 @@ echo 'func main() { display "Hello, MiniLang!"; }' > hello.mini
 cargo run --release -- run hello.mini
 ```
 
-## 📝 Language Syntax
+## Language Syntax
 
 ### Hello World
 ```minilang
@@ -107,7 +114,7 @@ func main() {
 }
 ```
 
-## 🛠️ CLI Usage
+## CLI Usage
 
 ### Commands
 
@@ -146,7 +153,7 @@ minilang ast program.mini
 minilang stats program.mini --time
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Source (.mini) → Lexer → Parser → Type Checker → Optimizer → Code Gen → C Code → GCC → Executable
@@ -181,7 +188,7 @@ minilang_compiler/
 └── README.md
 ```
 
-## 🔬 Testing
+## Testing
 
 ```bash
 # Run all tests
@@ -197,7 +204,7 @@ cargo test -- --nocapture
 cargo bench
 ```
 
-## 🌐 WebAssembly Build
+## WebAssembly Build
 
 Build the compiler for the web playground:
 
@@ -212,15 +219,16 @@ wasm-pack build --target web --out-dir web/pkg
 cd web && python3 -m http.server
 ```
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
+- **Piston API** for code execution engine for the web playground
 - **Rust** for the incredible compiler infrastructure
 - **Logos** for lightning-fast lexical analysis
 - **Miette** for beautiful error reporting
 - **Monaco Editor** for the web-based code editor
 - **wasm-pack** for seamless WebAssembly integration
 
-## 📧 Contact
+## Contact
 
 - Email: heetabhaushali@gmail.com
 

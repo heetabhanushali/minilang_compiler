@@ -157,8 +157,10 @@ impl SymbolTable {
 
     /// Calculate Levenshtein distance between two strings
     fn levenshtein_distance(&self, s1: &str, s2: &str) -> usize {
-        let len1 = s1.len();
-        let len2 = s2.len();
+        let s1_chars: Vec<char> = s1.chars().collect();
+        let s2_chars: Vec<char> = s2.chars().collect();
+        let len1 = s1_chars.len();
+        let len2 = s2_chars.len();
         let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
         
         for i in 0..=len1 {
@@ -170,7 +172,7 @@ impl SymbolTable {
         
         for i in 1..=len1 {
             for j in 1..=len2 {
-                let cost = if s1.chars().nth(i - 1) == s2.chars().nth(j - 1) {
+                let cost = if s1_chars[i -1] == s2_chars[j-1] {
                     0
                 } else {
                     1

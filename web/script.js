@@ -14,6 +14,7 @@ let currentOptLevel = 0;
 let wasmModule = null;
 let wasmCompile = null;
 let compileTimeout = null;
+const PISTON_API = 'https://emkc.org/api/v2/piston/execute';
 const COMPILE_DEBOUNCE_MS = 300;
 const defaultCode = `# Welcome to MiniLang!
 # Try compiling this example
@@ -26,7 +27,7 @@ func main() {
     let sum: int = x + y;
     let product: int = x * 2;  # Strength reduction!
     
-    display "Sum: ", sum;
+    display "Sum: ", sum , "\\n";
     display "Product: ", product;
     
     # Dead code elimination
@@ -214,6 +215,9 @@ function initializeEditor() {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
             compileCode();
         });
+        editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function() {
+            runCode();
+        });
     });
 }
 
@@ -326,13 +330,11 @@ async function compileCode() {
         return;
     }
 
-    // Check if WASM is loaded
     if (!wasmCompile) {
         showError('Compiler not loaded yet. Please wait a moment and try again.');
         return;
     }
 
-    // Show compiling state
     const compileBtn = document.getElementById('compile-btn');
     const originalHTML = compileBtn.innerHTML;
     compileBtn.disabled = true;
@@ -344,9 +346,9 @@ async function compileCode() {
     `;
 
     try {
-    // Call actual WASM compiler
         const resultJson = wasmCompile(code, currentOptLevel);
         const result = JSON.parse(resultJson);
+        
         showCompilationResult(result);
     } catch (error) {
         showError(error.message);
@@ -357,14 +359,263 @@ async function compileCode() {
     }
 }
 
+// ============================================
+// Run Code (Compile + Execute via Piston API)
+// ============================================
+async function runCode() {
+    const code = editor.getValue();
+    
+    if (!code.trim()) {
+        showError('Please write some code first!');
+        return;
+    }
+
+    if (!wasmCompile) {
+        showError('Compiler not loaded yet. Please wait a moment and try again.');
+        return;
+    }
+
+    const runBtn = document.getElementById('run-btn');
+    const originalHTML = runBtn.innerHTML;
+    runBtn.disabled = true;
+    runBtn.innerHTML = `
+        <svg class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span>Running...</span>
+    `;
+
+    // Switch to Result tab
+    document.querySelector('.output-tab-btn[data-output="result"]').click();
+
+    try {
+        // Step 1: Compile MiniLang → C
+        const resultJson = wasmCompile(code, currentOptLevel);
+        const result = JSON.parse(resultJson);
+
+        if (!result.success || !result.c_code) {
+            showCompilationResult(result);
+            return;
+        }
+
+        // Update other tabs
+        lastCompiledCCode = result.c_code;
+        document.getElementById('download-c-btn').classList.remove('hidden');
+        document.getElementById('c-code-display').textContent = result.c_code;
+        updateStats(result.stats || {});
+        updateTokens(result.tokens || []);
+        updateAST(result.ast || '');
+
+        // Show "executing" status in Result tab
+        showRunStatus('Compiled successfully. Executing on remote server...');
+
+        // Step 2: Execute via Piston API
+        const execResult = await executeOnPiston(result.c_code);
+        
+        // Step 3: Display output in Result tab
+        showRunOutput(execResult);
+
+    } catch (error) {
+        showRunError('Execution Error', escapeHtml(error.message));
+        console.error('Run error:', error);
+    } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = originalHTML;
+    }
+}
 
 // ============================================
-// Show Compilation Result
+// Execute C Code on Piston API
 // ============================================
+async function executeOnPiston(cCode) {
+    const response = await fetch(PISTON_API, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            language: 'c',
+            version: '10.2.0',
+            files: [{
+                name: 'main.c',
+                content: cCode
+            }],
+            stdin: '',
+            args: [],
+            compile_timeout: 10000,
+            run_timeout: 5000,
+            compile_memory_limit: -1,
+            run_memory_limit: -1,
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Piston API error: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+}
+
+// ============================================
+// Display Run Output in Result Tab
+// ============================================
+function showRunOutput(pistonResult) {
+    const resultDiv = document.getElementById('output-result');
+    
+    const compile = pistonResult.compile || {};
+    const run = pistonResult.run || {};
+    
+    // GCC compilation failed
+    if (compile.code !== 0 && compile.code !== undefined) {
+        resultDiv.innerHTML = `
+            <div class="p-6">
+                <div class="message-error">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span class="font-semibold">GCC Compilation Failed</span>
+                </div>
+                <div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+                    <pre class="text-sm font-mono" style="color: var(--error); white-space: pre-wrap; background: transparent; border: none; padding: 0; margin: 0;">${escapeHtml(compile.stderr || compile.output || 'Unknown GCC error')}</pre>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // Build output text
+    let outputParts = [];
+    
+    if (run.stdout) {
+        outputParts.push(run.stdout);
+    }
+    
+    if (run.stderr) {
+        outputParts.push(run.stderr);
+    }
+    
+    if (run.signal) {
+        const signalMessages = {
+            'SIGSEGV': '⚠ Segmentation fault (invalid memory access)',
+            'SIGFPE': '⚠ Floating point exception (division by zero?)',
+            'SIGABRT': '⚠ Program aborted',
+            'SIGKILL': '⚠ Program killed (timeout or memory limit)',
+            'SIGTERM': '⚠ Program terminated',
+        };
+        outputParts.push(signalMessages[run.signal] || `⚠ Signal: ${run.signal}`);
+    }
+
+    const exitCode = run.code ?? 0;
+    const isSuccess = exitCode === 0 && !run.signal;
+    const outputText = outputParts.join('\n') || '(no output)';
+
+    resultDiv.innerHTML = `
+        <div class="p-6">
+            <div class="${isSuccess ? 'message-success' : 'message-error'}">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${isSuccess 
+                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>'
+                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+                    }
+                </svg>
+                <span class="font-semibold">${isSuccess ? 'Program executed successfully' : 'Program exited with errors'}</span>
+            </div>
+            <div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+                <pre class="text-sm font-mono" style="color: var(--text-primary); white-space: pre-wrap; background: transparent; border: none; padding: 0; margin: 0;">${escapeHtml(outputText)}</pre>
+                <div class="mt-3 pt-3 text-xs" style="border-top: 1px solid var(--border); color: ${isSuccess ? 'var(--success)' : 'var(--error)'};">
+                    ${isSuccess ? '✓' : '✗'} Process exited with code ${exitCode}${run.signal ? ` (${run.signal})` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================
+// Run Helper Functions
+// ============================================
+function showRunStatus(message) {
+    const resultDiv = document.getElementById('output-result');
+    resultDiv.innerHTML = `
+        <div class="p-6 h-full flex items-center justify-center">
+            <div class="text-center">
+                <div class="loader mx-auto mb-4" style="border-top-color: #10B981;"></div>
+                <p class="text-sm dark:text-slate-400 text-slate-600">${escapeHtml(message)}</p>
+            </div>
+        </div>
+    `;
+}
+
+function showRunError(title, htmlContent) {
+    const resultDiv = document.getElementById('output-result');
+    resultDiv.innerHTML = `
+        <div class="p-6">
+            <div class="message-error">
+                <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <span class="font-semibold">${escapeHtml(title)}</span>
+            </div>
+            <div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+                <pre class="text-sm font-mono" style="color: var(--error); white-space: pre-wrap; background: transparent; border: none; padding: 0; margin: 0;">${htmlContent}</pre>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================
+// ANSI to HTML Converter
+// ============================================
+function ansiToHtml(ansiString) {
+    if (!ansiString) return '';
+    
+    const COLORS = {
+        '30': 'ansi-black', '31': 'ansi-red', '32': 'ansi-green', '33': 'ansi-yellow',
+        '34': 'ansi-blue', '35': 'ansi-magenta', '36': 'ansi-cyan', '37': 'ansi-white',
+        '90': 'ansi-bright-black', '91': 'ansi-bright-red', '92': 'ansi-bright-green',
+        '93': 'ansi-bright-yellow', '94': 'ansi-bright-blue', '95': 'ansi-bright-magenta',
+        '96': 'ansi-bright-cyan', '97': 'ansi-bright-white',
+        '1': 'ansi-bold', '2': 'ansi-dim', '3': 'ansi-italic', '4': 'ansi-underline'
+    };
+    
+    let result = '';
+    let openTags = [];
+    let i = 0;
+
+    while (i < ansiString.length) {
+        if ((ansiString.charCodeAt(i) === 0x1b) && ansiString[i + 1] === '[') {
+            let j = i + 2;
+            while (j < ansiString.length && ansiString[j] !== 'm') j++;
+            
+            if (j < ansiString.length) {
+                const codes = ansiString.substring(i + 2, j).split(';');
+                for (const code of codes) {
+                    if (code === '0' || code === '') {
+                        while (openTags.length) { result += '</span>'; openTags.pop(); }
+                    } else if (COLORS[code]) {
+                        result += `<span class="${COLORS[code]}">`;
+                        openTags.push(code);
+                    }
+                }
+                i = j + 1;
+                continue;
+            }
+        }
+        
+        const c = ansiString[i];
+        if (c === '<') result += '&lt;';
+        else if (c === '>') result += '&gt;';
+        else if (c === '&') result += '&amp;';
+        else result += c;
+        i++;
+    }
+    
+    while (openTags.length) { result += '</span>'; openTags.pop(); }
+    return result;
+}
+
 function showCompilationResult(result) {
     const resultDiv = document.getElementById('output-result');
     
-    // Store C code for download and show button
     if (result.success && result.c_code) {
         lastCompiledCCode = result.c_code;
         document.getElementById('download-c-btn').classList.remove('hidden');
@@ -373,70 +624,39 @@ function showCompilationResult(result) {
     }
     
     if (result.success) {
-        // Success - clean display
         resultDiv.innerHTML = `
             <div class="p-6">
-                <h3 class="text-xl font-bold mb-3" style="color: var(--primary);">✓ Compilation Successful</h3>
-                <div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
-                    <pre class="text-sm font-mono" style="color: var(--text-primary); white-space: pre-wrap; background: transparent; border: none; padding: 0; margin: 0;">${escapeHtml(result.output)}</pre>
+                <div class="message-success">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="font-semibold">Compilation Successful</span>
+                </div>
+                <div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+                    <pre class="text-sm font-mono" style="color: var(--text-primary); background: transparent;">Optimization level: ${currentOptLevel}\n\nClick Run to execute your program.</pre>
                 </div>
             </div>
         `;
     } else {
-        const errorInfo = parseErrorDetails(result.error || 'Unknown error occurred');
+        const errorContent = result.error_ansi 
+            ? ansiToHtml(result.error_ansi) 
+            : escapeHtml(result.error || 'Unknown error');
 
-        // Generate the code context with arrow (miette-style)
-        let codeDisplay = '';
-        if (errorInfo.location && editor) {
-            const code = editor.getValue();
-            const lines = code.split('\n');
-            const errorLine = lines[errorInfo.location.line - 1] || '';
-            const col = errorInfo.location.column;
-            
-
-            const spaces = '\u00A0'.repeat(col);
-            const arrow = spaces + '^';
-            
-
-                
-            codeDisplay += `
-                <div style="margin: 1rem 0;">
-                    <div style="color: var(--primary); margin-bottom: 0.5rem; font-weight: 600;">
-                        Error at Line ${errorInfo.location.line}, Column ${col + 1}
-                    </div>
-                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;">
-                        <div style="display: flex;">
-                            <span style="color: var(--text-muted); margin-right: 1rem; min-width: 3ch; text-align: right;">
-                                ${errorInfo.location.line}
-                            </span>
-                            <span style="color: var(--text-primary); white-space: pre;">${escapeHtml(errorLine)}</span>
-                        </div>
-                        <div style="display: flex;">
-                            <span style="margin-right: 1rem; min-width: 3ch;"></span>
-                            <span style="color: var(--error); font-weight: bold; white-space: pre;">${arrow}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
         resultDiv.innerHTML = `
             <div class="p-6">
-                <h3 class="text-xl font-bold mb-3 text-error">✗ Compilation Failed</h3>
-                <div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border);">
-                    ${errorInfo.location ? `
-                        <div style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
-                            ${codeDisplay}
-                        </div>
-                    ` : ''}
-                    <pre class="text-sm font-mono" style="color: var(--text-primary); white-space: pre-wrap; background: transparent; border: none; padding: 0; margin: 0; line-height: 1.8;">${escapeHtml(errorInfo.cleanMessage)}</pre>
+                <div class="message-error mb-4">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span class="font-semibold">Compilation Failed</span>
+                </div>
+                <div class="error-console">
+                    <pre>${errorContent}</pre>
                 </div>
             </div>
         `;
     }
 
-
-    // Update other tabs
     document.getElementById('c-code-display').textContent = result.c_code || '// No C code generated';
     updateStats(result.stats || {});
     updateTokens(result.tokens || []);
@@ -823,21 +1043,13 @@ function clearEditor() {
         
         // Reset output
         const resultDiv = document.getElementById('output-result');
-        resultDiv.innerHTML = `
-            <div class="p-6 h-full flex items-center justify-center">
-                <div class="text-center dark:text-slate-400 text-slate-600">
-                    <div class="relative mx-auto mb-4 w-20 h-20">
-                        <div class="absolute inset-0 bg-primary/10 rounded-2xl animate-pulse"></div>
-                        <svg class="w-20 h-20 relative z-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                        </svg>
-                    </div>
-                    <p class="text-lg font-medium dark:text-slate-300 text-slate-700">Ready to compile</p>
-                    <p class="text-sm mt-2 dark:text-slate-400 text-slate-600">Write MiniLang code and click <span class="text-primary font-semibold">Compile</span></p>
-                    <p class="text-xs mt-3 dark:text-slate-500 text-slate-500">Or press <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Ctrl</kbd> + <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Enter</kbd></p>
-                </div>
-            </div>
-        `;
+        resultDiv.innerHTML = `<div class="p-4 lg:p-6 h-full flex items-center justify-center"><div class="text-center dark:text-slate-400 text-slate-600"><div class="relative mx-auto mb-4 w-16 h-16 lg:w-20 lg:h-20"><div class="absolute inset-0 bg-primary/10 rounded-2xl animate-pulse"></div><svg class="w-16 h-16 lg:w-20 lg:h-20 relative z-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg></div>
+        <p class="text-lg font-medium dark:text-slate-300 text-slate-700">Playground is ready</p>
+        <p class="text-sm mt-4 dark:text-slate-500 text-slate-500">
+        press <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Ctrl</kbd> + <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Enter</kbd> to compile</p>
+        <br>
+        <p class="text-sm mt-2 dark:text-slate-500 text-slate-500">
+        press <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Shift</kbd> + <kbd class="px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded border dark:border-slate-700 border-slate-300 dark:text-slate-300 text-slate-700">Enter</kbd> to compile and execute</p></div></div>`;
         
         // Clear C code tab
         document.getElementById('c-code-display').textContent = '// Generated C code will appear here after compilation';
@@ -1027,6 +1239,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const compileBtn = document.getElementById('compile-btn');
     if (compileBtn) {
         compileBtn.addEventListener('click', compileCode);
+    }
+    const runBtn = document.getElementById('run-btn');
+    if (runBtn) {
+        runBtn.addEventListener('click', runCode);
     }
     document.getElementById('clear-btn').addEventListener('click', clearEditor);
     document.getElementById('download-source-btn').addEventListener('click', downloadSource);

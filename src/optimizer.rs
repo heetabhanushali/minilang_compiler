@@ -1,7 +1,7 @@
 // src/optimizer.rs - Code optimization passes
 
 use crate::ast::*;
-use std::collections::HashMap;
+use std::collections::{HashMap,HashSet};
 
 /// Statistics about optimizations performed
 #[derive(Debug, Clone, Default)]
@@ -294,62 +294,139 @@ impl Optimizer {
     
     /// Track constant assignments for propagation
     fn track_constants_in_block(&mut self, block: &Block) {
+        let reassigned = self.collect_assigned_variables_in_block(block);
+        
+        // Second: only track variables that are never reassigned
         for statement in &block.statements {
             match statement {
                 Statement::Const(const_stmt) => {
-                    // For const, evaluate the expression if it's foldable
                     match &const_stmt.value {
                         Expression::Literal(lit) => {
-                            // Direct literal
                             self.constant_values.insert(
                                 const_stmt.name.clone(),
-                                lit.value.clone()
+                                lit.value.clone(),
                             );
                         }
                         Expression::Binary(binary) => {
-                            // Try to fold the binary expression
                             if let Some(folded) = self.try_fold_binary(binary) {
                                 self.constant_values.insert(
                                     const_stmt.name.clone(),
-                                    folded
+                                    folded,
                                 );
                             }
                         }
-                        _ => {
-                            // Other expressions - for now, skip
-                        }
+                        _ => {}
                     }
                 }
                 Statement::Let(let_stmt) => {
-                    // For let, only track if initialized with a literal
-                    if let Some(Expression::Literal(lit)) = &let_stmt.value {
-                        self.constant_values.insert(
-                            let_stmt.name.clone(),
-                            lit.value.clone()
-                        );
+                    // Only track if this variable is NEVER reassigned
+                    if !reassigned.contains(&let_stmt.name) {
+                        if let Some(Expression::Literal(lit)) = &let_stmt.value {
+                            self.constant_values.insert(
+                                let_stmt.name.clone(),
+                                lit.value.clone(),
+                            );
+                        }
                     }
                 }
-                Statement::If(if_stmt) => {
-                    // Recurse into blocks
-                    self.track_constants_in_block(&if_stmt.then_block);
-                    if let Some(ref else_block) = if_stmt.else_block {
-                        self.track_constants_in_block(else_block);
-                    }
+                _ => {
+                    // Other statements don't introduce new constant bindings
                 }
-                Statement::While(while_stmt) => {
-                    self.track_constants_in_block(&while_stmt.body);
-                }
-                Statement::DoWhile(do_while) => {
-                    self.track_constants_in_block(&do_while.body);
-                }
-                Statement::For(for_stmt) => {
-                    self.track_constants_in_block(&for_stmt.body);
-                }
-                Statement::Block(inner_block) => {
-                    self.track_constants_in_block(inner_block);
-                }
-                _ => {}
             }
+        }
+    }
+
+    /// Collect all variable names that are reassigned anywhere in a block
+    fn collect_assigned_variables_in_block(&self, block: &Block) -> HashSet<String> {
+        let mut assigned = HashSet::new();
+        for statement in &block.statements {
+            self.collect_assigned_variables_in_statement(statement, &mut assigned);
+        }
+        assigned
+    }
+
+    /// Recursively find assignments in a statement
+    fn collect_assigned_variables_in_statement(
+        &self,
+        statement: &Statement,
+        assigned: &mut HashSet<String>,
+    ) {
+        match statement {
+            Statement::Expression(expr_stmt) => {
+                self.collect_assigned_variables_in_expression(&expr_stmt.expression, assigned);
+            }
+            Statement::If(if_stmt) => {
+                for stmt in &if_stmt.then_block.statements {
+                    self.collect_assigned_variables_in_statement(stmt, assigned);
+                }
+                if let Some(ref else_block) = if_stmt.else_block {
+                    for stmt in &else_block.statements {
+                        self.collect_assigned_variables_in_statement(stmt, assigned);
+                    }
+                }
+            }
+            Statement::While(while_stmt) => {
+                for stmt in &while_stmt.body.statements {
+                    self.collect_assigned_variables_in_statement(stmt, assigned);
+                }
+            }
+            Statement::DoWhile(do_while) => {
+                for stmt in &do_while.body.statements {
+                    self.collect_assigned_variables_in_statement(stmt, assigned);
+                }
+            }
+            Statement::For(for_stmt) => {
+                if let Some(ref init) = for_stmt.init {
+                    self.collect_assigned_variables_in_statement(init, assigned);
+                }
+                if let Some(ref update) = for_stmt.update {
+                    self.collect_assigned_variables_in_expression(update, assigned);
+                }
+                for stmt in &for_stmt.body.statements {
+                    self.collect_assigned_variables_in_statement(stmt, assigned);
+                }
+            }
+            Statement::Block(block) => {
+                for stmt in &block.statements {
+                    self.collect_assigned_variables_in_statement(stmt, assigned);
+                }
+            }
+            // Let, Const, Display, Return, Break, Continue
+            // don't reassign existing variables
+            _ => {}
+        }
+    }
+
+    /// Recursively find assignments in an expression
+    fn collect_assigned_variables_in_expression(
+        &self,
+        expr: &Expression,
+        assigned: &mut HashSet<String>,
+    ) {
+        match expr {
+            Expression::Assign(assign) => {
+                if !assign.target.starts_with("__ARRAY_INDEX__:") {
+                    assigned.insert(assign.target.clone());
+                }
+                self.collect_assigned_variables_in_expression(&assign.value, assigned);
+            }
+            Expression::Binary(binary) => {
+                self.collect_assigned_variables_in_expression(&binary.left, assigned);
+                self.collect_assigned_variables_in_expression(&binary.right, assigned);
+            }
+            Expression::Unary(unary) => {
+                self.collect_assigned_variables_in_expression(&unary.operand, assigned);
+            }
+            Expression::Call(call) => {
+                for arg in &call.args {
+                    self.collect_assigned_variables_in_expression(arg, assigned);
+                }
+            }
+            Expression::Index(index) => {
+                self.collect_assigned_variables_in_expression(&index.array, assigned);
+                self.collect_assigned_variables_in_expression(&index.index, assigned);
+            }
+            Expression::Literal(_) | Expression::Identifier(_) => {}
         }
     }
     

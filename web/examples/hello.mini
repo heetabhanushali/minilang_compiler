@@ -1,6 +1,6 @@
 # Hello World in MiniLang
 
 func main() {
-    display "Hello, MiniLang!";
+    display "Hello, MiniLang!\n";
     display "Welcome to the compiler playground!";
 }

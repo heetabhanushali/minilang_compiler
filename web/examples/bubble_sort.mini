@@ -1,8 +1,6 @@
-# Bubble Sort Algorithm
-
-func bubbleSort(arr: int[10], size: int) {
-    for i = 0; i < size - 1; i = i + 1 {
-        for j = 0; j < size - i - 1; j = j + 1 {
+func bubble_sort(arr: int[10], size: int) {
+    for let i: int = 0; i < size - 1; i = i + 1 {
+        for let j: int = 0; j < size - i - 1; j = j + 1 {
             if arr[j] > arr[j + 1] {
                 let temp: int = arr[j];
                 arr[j] = arr[j + 1];
@@ -13,9 +11,19 @@ func bubbleSort(arr: int[10], size: int) {
 }
 
 func main() {
-    let numbers: int[10] = [64, 34, 25, 12, 22, 11, 90, 88, 76, 45];
+    let numbers: int[10] = [64, 34, 25, 12, 22, 11, 90, 88, 50, 17];
     
-    display "Sorting array...";
-    bubbleSort(numbers, 10);
-    display "Done!";
+    display "Before: ";
+    for let i: int = 0; i < 10; i = i + 1 {
+        display numbers[i], " ";
+    }
+    display "\n";
+    
+    bubble_sort(numbers, 10);
+    
+    display "After : ";
+    for let i: int = 0; i < 10; i = i + 1 {
+        display numbers[i], " ";
+    }
+    display "\n";
 }

@@ -1157,3 +1157,143 @@ a:focus-visible {
         box-shadow: none;
     }
 }
+
+/* ============================================
+   ANSI Error Console
+   ============================================ */
+.error-console {
+    border: 1px solid var(--error);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    overflow-x: auto;
+}
+
+.dark .error-console {
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.light .error-console {
+    background: #FAFAFA;
+}
+
+.error-console pre {
+    margin: 0;
+    padding: 0;
+    white-space: pre;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+}
+
+/* ANSI Colors - Dark */
+.dark .ansi-black { color: #475569; }
+.dark .ansi-red { color: #ef4444; }
+.dark .ansi-green { color: #10b981; }
+.dark .ansi-yellow { color: #f59e0b; }
+.dark .ansi-blue { color: #3b82f6; }
+.dark .ansi-magenta { color: #a855f7; }
+.dark .ansi-cyan { color: #06b6d4; }
+.dark .ansi-white { color: #f1f5f9; }
+.dark .ansi-bright-black { color: #64748b; }
+.dark .ansi-bright-red { color: #f87171; }
+.dark .ansi-bright-green { color: #34d399; }
+.dark .ansi-bright-yellow { color: #fbbf24; }
+.dark .ansi-bright-blue { color: #60a5fa; }
+.dark .ansi-bright-magenta { color: #c084fc; }
+.dark .ansi-bright-cyan { color: #22d3ee; }
+.dark .ansi-bright-white { color: #ffffff; }
+
+/* ANSI Colors - Light */
+.light .ansi-black { color: #1e293b; }
+.light .ansi-red { color: #dc2626; }
+.light .ansi-green { color: #16a34a; }
+.light .ansi-yellow { color: #d97706; }
+.light .ansi-blue { color: #2563eb; }
+.light .ansi-magenta { color: #9333ea; }
+.light .ansi-cyan { color: #0891b2; }
+.light .ansi-white { color: #64748b; }
+.light .ansi-bright-black { color: #475569; }
+.light .ansi-bright-red { color: #ef4444; }
+.light .ansi-bright-green { color: #22c55e; }
+.light .ansi-bright-yellow { color: #f59e0b; }
+.light .ansi-bright-blue { color: #3b82f6; }
+.light .ansi-bright-magenta { color: #a855f7; }
+.light .ansi-bright-cyan { color: #06b6d4; }
+.light .ansi-bright-white { color: #94a3b8; }
+
+/* ANSI Styles */
+.ansi-bold { font-weight: 700; }
+.ansi-dim { opacity: 0.7; }
+.ansi-italic { font-style: italic; }
+.ansi-underline { text-decoration: underline; }
+
+
+/* ============================================
+   Run Button (Green variant)
+   ============================================ */
+.run-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.run-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.run-button:hover::before {
+    opacity: 1;
+}
+
+.run-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+
+.run-button:active {
+    transform: translateY(0);
+}
+
+.run-button svg,
+.run-button span {
+    position: relative;
+    z-index: 1;
+}
+
+.run-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+    .run-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+    }
+}

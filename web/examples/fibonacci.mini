@@ -3,12 +3,19 @@
 func fibonacci(n: int) -> int {
     if n <= 0 {
         send 0;
-    } else if n == 1 {
-        send 1;
+    } else {
+        if n == 1 {
+            send 1;
+        } else {
+            send fibonacci(n - 1) + fibonacci(n - 2);
+        }
     }
-    send fibonacci(n - 1) + fibonacci(n - 2);
 }
 
 func main() {
-    display "Fibonacci(10) = ", fibonacci(10);
+    let i: int = 0;
+    while i <= 10 {
+        display fibonacci(i) , " ";
+        i = i + 1;
+    }
 }

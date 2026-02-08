@@ -89,7 +89,7 @@ impl CodeGenerator {
             .collect::<Vec<_>>()
             .join(", ");
         
-        self.emit(&format!("{} {}({});", return_type, self.c_identifier(&function.name), params));
+        self.emit_line(&format!("{} {}({});", return_type, self.c_identifier(&function.name), params));
     }
     
     /// Emit function definition
@@ -249,9 +249,7 @@ impl CodeGenerator {
                                     self.escape_string(text)));
                             }
                             StringPart::Expression(expr) => {
-                                let expr_str = self.expression_to_string(expr)?;
-                                let format = self.get_printf_format(expr);
-                                self.emit_line(&format!("printf(\"{}\", {});", format, expr_str));
+                                self.emit_display_expression(expr)?;
                             }
                         }
                     }
@@ -259,13 +257,48 @@ impl CodeGenerator {
                 }
             }
             
-            // Normal expression handling
-            let expr_str = self.expression_to_string(expr)?;
+            self.emit_display_expression(expr)?;
+        }
+        Ok(())
+    }
+
+    fn emit_display_expression(&mut self, expr: &Expression) -> Result<(), String> {
+        let expr_str = self.expression_to_string(expr)?;
+        if self.is_bool_expression(expr){
+            self.emit_line(&format!("printf(\"%s\", {} ? \"true\" : \"false\");", expr_str));
+        } else{
             let format = self.get_printf_format(expr);
             self.emit_line(&format!("printf(\"{}\", {});", format, expr_str));
         }
-        self.emit_line("printf(\"\\n\");");
         Ok(())
+    }
+
+    fn is_bool_expression(&self, expr: &Expression) -> bool {
+        match expr{
+            Expression::Literal(lit) => matches!(lit.value, Literal::Boolean(_)),
+            Expression::Identifier(id) => {
+                self.variable_types.get(&id.name)
+                    .map(|t| matches!(t, Type::Bool))
+                    .unwrap_or(false)
+            }
+            Expression::Binary(binary) => {
+                matches!(binary.op,
+                    BinaryOp::Equal | BinaryOp::NotEqual |
+                    BinaryOp::Less | BinaryOp::Greater |
+                    BinaryOp::LessEqual | BinaryOp::GreaterEqual |
+                    BinaryOp::And | BinaryOp::Or
+                )
+            }
+            Expression::Unary(unary) => {
+                matches!(unary.op, UnaryOp::Not)
+            }
+            Expression::Call(call) => {
+                self.variable_types.get(&call.function)
+                    .map(|t| matches!(t, Type::Bool))
+                    .unwrap_or(false)
+            }
+            _ => false,
+        }
     }
     
     /// Emit if statement
