@@ -2,7 +2,6 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/yourusername/minilang)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![WebAssembly](https://img.shields.io/badge/wasm-ready-purple)](https://webassembly.org/)
 
 A **statically-typed, compiled programming language** built entirely in Rust, featuring a unique syntax with Pascal-style logical operators (`AND`/`OR`/`NOT`) and a complete compiler pipeline from source to native executable.
