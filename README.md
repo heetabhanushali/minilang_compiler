@@ -15,7 +15,7 @@ The online playground compiles MiniLang to C using WebAssembly, then executes th
 - 10 second compilation timeout
 - Memory limits for safety
 
-**[Try MiniLang in your browser →](https://heetabhanushali.github.io/minilang_compiler/)**
+**[Try MiniLang in your browser →](https://minilang-playground.vercel.app/)**
 
 Experience the interactive playground with real-time compilation, AST visualization, static analysis, and optimization statistics.
 
@@ -49,7 +49,7 @@ Experience the interactive playground with real-time compilation, AST visualizat
 
 ### Web Playground
 
-Visit the [MiniLang Playground](https://heetabhanushali.github.io/minilang_compiler/) to start coding immediately, or run locally:
+Visit the [MiniLang Playground](https://minilang-playground.vercel.app/) to start coding immediately, or run locally:
 
 ```bash
 cd playground
