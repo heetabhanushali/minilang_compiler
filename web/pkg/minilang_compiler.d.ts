@@ -2,11 +2,13 @@
 /* eslint-disable */
 export function init_panic_hook(): void;
 export function compile(source: string, opt_level: number): string;
+export function analyze(source: string): string;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly analyze: (a: number, b: number) => [number, number];
   readonly compile: (a: number, b: number, c: number) => [number, number];
   readonly init_panic_hook: () => void;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;

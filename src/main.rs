@@ -6,66 +6,52 @@ use minilang_compiler::{
     TypeChecker, SemanticError,
     CodeGenerator,
     Optimizer,
-    cli::{Cli, Commands}
+    cli::{Cli, Commands},
+    analyzer,
 };
 use clap::Parser as ClapParser;
 use miette::{NamedSource, Report};
-use std::{fs, time::{Instant}};
+use std::{fs, time::Instant};
 use std::process::{self, Command};
 use std::path::{Path, PathBuf};
 
 fn main() {
     let args = Cli::parse();
     
-    // Determine which command to run
-    match &args.command {  // Borrow instead of move
-        Some(Commands::Compile { file, to_c }) => {
-            // Explicit compile command
-            handle_compile(file, &args, *to_c, false);  // *to_c to dereference
+    match &args.command {
+        Commands::Compile { file, to_c } => {
+            handle_compile(file, &args, *to_c, false);
         }
-        Some(Commands::Run { file }) => {
-            // Run command
+        Commands::Run { file } => {
             handle_compile(file, &args, false, true);
         }
-        Some(Commands::Check { file }) => {
+        Commands::Check { file } => {
             handle_check(file);
         }
-        Some(Commands::Ast { file }) => {
+        Commands::Ast { file } => {
             handle_ast(file);
         }
-        Some(Commands::Tokens { file }) => {
+        Commands::Tokens { file } => {
             handle_tokens(file);
         }
-        Some(Commands::Stats { file, show_time }) => {
+        Commands::Stats { file, show_time } => {
             handle_stats(file, *show_time);
         }
-        Some(Commands::Clean { directory, dry_run }) => {
+        Commands::Clean { directory, dry_run } => {
             handle_clean(directory, *dry_run);
         }
-        None => {
-            // No subcommand - check if file was provided as positional arg
-            if let Some(ref file) = args.file {  // Use ref here
-                // Default behavior: compile
-                handle_compile(file, &args, false, false);
-            } else {
-                // No file provided
-                eprintln!("Error: No input file provided");
-                eprintln!("Usage: minilang <FILE> or minilang <COMMAND> <FILE>");
-                eprintln!("Try 'minilang --help' for more information");
-                process::exit(1);
-            }
+        Commands::Analyze { file, json } => {
+            handle_analyze(file, *json);
         }
     }
 }
 
 fn handle_compile(file: &PathBuf, args: &Cli, to_c_only: bool, should_run: bool) {
-    // Check if file exists
     if !file.exists() {
         eprintln!("❌ Error: File '{}' not found", file.display());
         process::exit(1);
     }
     
-    // Read source code
     let source = match fs::read_to_string(file) {
         Ok(content) => content,
         Err(e) => {
@@ -76,7 +62,6 @@ fn handle_compile(file: &PathBuf, args: &Cli, to_c_only: bool, should_run: bool)
     
     let filename = file.to_str().unwrap_or("unknown.mini");
     
-    // Compile
     compile_source(&source, filename, file, args, to_c_only, should_run);
 }
 
@@ -89,7 +74,6 @@ fn determine_output_path(file: &PathBuf, custom_name: &Option<String>) -> PathBu
         file.with_extension("")
     }
 }
-
 
 fn handle_check(file: &PathBuf) {
     if !file.exists() {
@@ -110,7 +94,6 @@ fn handle_check(file: &PathBuf) {
     println!("Checking: {}", file.display());
     println!("{}", "=".repeat(50));
     
-    // Lexical analysis
     print!("Lexer........... ");
     let mut lexer = Lexer::new(&source);
     let tokens = match lexer.tokenize() {
@@ -125,7 +108,6 @@ fn handle_check(file: &PathBuf) {
         }
     };
     
-    // Parsing
     print!("Parser.......... ");
     let mut parser = Parser::new(tokens, source.to_string());
     let program = match parser.parse_program() {
@@ -140,7 +122,6 @@ fn handle_check(file: &PathBuf) {
         }
     };
     
-    // Type checking
     print!("Type Checker.... ");
     let mut type_checker = TypeChecker::new();
     match type_checker.check_program(&program) {
@@ -180,7 +161,6 @@ fn handle_ast(file: &PathBuf) {
     
     let filename = file.to_str().unwrap_or("unknown.mini");
     
-    // Tokenize
     let mut lexer = Lexer::new(&source);
     let tokens = match lexer.tokenize() {
         Ok(tokens) => tokens,
@@ -190,7 +170,6 @@ fn handle_ast(file: &PathBuf) {
         }
     };
     
-    // Parse
     let mut parser = Parser::new(tokens, source.to_string());
     let program = match parser.parse_program() {
         Ok(prog) => prog,
@@ -200,7 +179,6 @@ fn handle_ast(file: &PathBuf) {
         }
     };
     
-    // Display the AST
     program.display_tree();
 }
 
@@ -234,7 +212,6 @@ fn handle_tokens(file: &PathBuf) {
     
     println!("Total tokens: {}\n", tokens.len());
     
-    // Display tokens with their position
     for (i, token_with_span) in tokens.iter().enumerate() {
         let line_num = source[..token_with_span.span.start]
             .chars()
@@ -268,13 +245,11 @@ fn handle_stats(file: &PathBuf, show_time: bool) {
     println!("Statistics for: {}", file.display());
     println!("{}", "=".repeat(60));
     
-    // Source stats
     println!("\nSource File:");
     println!("   Lines of code: {}", source.lines().count());
     println!("   Characters: {}", source.len());
     println!("   Non-empty lines: {}", source.lines().filter(|l| !l.trim().is_empty()).count());
     
-    // Lexer stats
     let start = Instant::now();
     let mut lexer = Lexer::new(&source);
     let tokens = match lexer.tokenize() {
@@ -289,7 +264,6 @@ fn handle_stats(file: &PathBuf, show_time: bool) {
     println!("\nTokens:");
     println!("   Total: {}", tokens.len());
     
-    // Count token types
     let keywords = tokens.iter().filter(|t| matches!(
         t.token,
         minilang_compiler::Token::Let | minilang_compiler::Token::Func |
@@ -316,7 +290,6 @@ fn handle_stats(file: &PathBuf, show_time: bool) {
     println!("   Identifiers: {}", identifiers);
     println!("   Literals: {}", literals);
     
-    // Parser stats
     let start = Instant::now();
     let mut parser = Parser::new(tokens, source.to_string());
     let program = match parser.parse_program() {
@@ -344,7 +317,6 @@ fn handle_stats(file: &PathBuf, show_time: bool) {
         );
     }
     
-    // Type checking stats
     let start = Instant::now();
     let mut type_checker = TypeChecker::new();
     let type_check_result = type_checker.check_program(&program);
@@ -363,7 +335,6 @@ fn handle_stats(file: &PathBuf, show_time: bool) {
         }
     }
     
-    // Code generation stats
     let start = Instant::now();
     let mut codegen = CodeGenerator::new();
     if let Ok(c_code) = codegen.generate(&program) {
@@ -396,19 +367,15 @@ fn handle_clean(directory: &PathBuf, dry_run: bool) {
     let mut files_to_delete = Vec::new();
     let mut total_size = 0u64;
     
-    // Find all .c files and executables
     if let Ok(entries) = fs::read_dir(directory) {
         for entry in entries.flatten() {
             let path = entry.path();
             
             if path.is_file() {
                 let should_delete = 
-                    // .c files
                     path.extension() == Some(std::ffi::OsStr::new("c")) ||
-                    // Files without extension (likely executables)
                     (path.extension().is_none() && 
                      path.file_stem().is_some() &&
-                     // Check if there's a corresponding .mini file
                      directory.join(format!("{}.mini", 
                          path.file_stem().unwrap().to_str().unwrap())).exists());
                 
@@ -458,6 +425,63 @@ fn handle_clean(directory: &PathBuf, dry_run: bool) {
     }
 }
 
+fn handle_analyze(file: &PathBuf, json_output: bool) {
+    if !file.exists() {
+        eprintln!("❌ Error: File '{}' not found", file.display());
+        process::exit(1);
+    }
+
+    let source = match fs::read_to_string(file) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("❌ Error reading file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    let filename = file.to_str().unwrap_or("unknown.mini");
+
+    let mut lexer = Lexer::new(&source);
+    let tokens = match lexer.tokenize() {
+        Ok(tokens) => tokens,
+        Err(e) => {
+            display_beautiful_error_lexer(e, &source, filename);
+            process::exit(1);
+        }
+    };
+
+    let mut parser = Parser::new(tokens, source.to_string());
+    let program = match parser.parse_program() {
+        Ok(prog) => prog,
+        Err(e) => {
+            display_beautiful_error_parser(e, &source, filename);
+            process::exit(1);
+        }
+    };
+
+    let mut type_checker = TypeChecker::new();
+    if let Err(errors) = type_checker.check_program(&program) {
+        eprintln!("⚠️  Type checking found {} error(s):", errors.len());
+        display_beautiful_error_semantic(errors, &source, filename);
+        eprintln!("Proceeding with analysis anyway...\n");
+    }
+
+    let report = analyzer::analyze_program(&program, &source);
+
+    if json_output {
+        match serde_json::to_string_pretty(&report) {
+            Ok(json) => println!("{}", json),
+            Err(e) => {
+                eprintln!("❌ Failed to serialize report: {}", e);
+                process::exit(1);
+            }
+        }
+    } else {
+        println!("Analyzing: {}", file.display());
+        analyzer::display_report(&report);
+    }
+}
+
 fn compile_source(
     source: &str, 
     filename: &str, 
@@ -466,7 +490,6 @@ fn compile_source(
     to_c_only: bool,
     should_run: bool,
 ) {
-    // Show compilation steps only if detail flag is set
     let show_details = args.detail;
 
     if show_details {
@@ -474,7 +497,6 @@ fn compile_source(
         println!("{}", "=".repeat(60));
     }
     
-    // STEP 1: Lexical Analysis
     if show_details {
         println!("\n_______________________________________");
         println!("Lexer: Tokenizing source code...");
@@ -488,7 +510,6 @@ fn compile_source(
                 println!("   ✅ Successfully tokenized!");
                 println!("   Found {} tokens", tokens.len());
                 
-                // Show token breakdown
                 let keywords = tokens.iter().filter(|t| matches!(
                     t.token,
                     minilang_compiler::Token::Let | minilang_compiler::Token::Func |
@@ -511,7 +532,6 @@ fn compile_source(
         }
     };
     
-    // STEP 2: Parsing
     if show_details {
         println!("\n_______________________________________");
         println!("Parser: Building Abstract Syntax Tree...");
@@ -525,7 +545,6 @@ fn compile_source(
                 println!("   ✅ Successfully parsed!");
                 println!("   Found {} function(s)", prog.functions.len());
                 
-                // Show function details
                 for func in &prog.functions {
                     let return_type = if let Some(ref rt) = func.return_type {
                         format!(" -> {:?}", rt)
@@ -540,7 +559,6 @@ fn compile_source(
                     );
                 }
                 
-                // Count total statements
                 let total_stmts: usize = prog.functions.iter()
                     .map(|f| f.body.statements.len())
                     .sum();
@@ -554,7 +572,6 @@ fn compile_source(
         }
     };
     
-    // STEP 3: Semantic Analysis
     if show_details {
         println!("\n_______________________________________");
         println!("Semantic Analyzer: Type checking...");
@@ -568,7 +585,6 @@ fn compile_source(
                 println!("   ✅ Type checking passed!");
             }
             
-            // Always show warnings, not just in detail mode
             let warnings = type_checker.get_warnings();
             if !warnings.is_empty() {
                 if show_details {
@@ -587,7 +603,6 @@ fn compile_source(
         }
     }
 
-    // STEP 3.5: OPTIMIZATION
     if args.optimization > 0 {
         if show_details {
             println!("\n_______________________________________");
@@ -624,7 +639,6 @@ fn compile_source(
         println!("Optimizer: Skipped (optimization level 0)");
     }
     
-    // STEP 4: Code Generation
     if show_details {
         println!("\n_______________________________________");
         println!("Code Generator: Generating C code...");
@@ -632,28 +646,24 @@ fn compile_source(
     
     let mut codegen = CodeGenerator::new();
     
-    // FIXED: Declare c_code outside the match
     let c_code = match codegen.generate(&program) {
-        Ok(code) => code,  // Just return the code
+        Ok(code) => code,
         Err(e) => {
             eprintln!("❌ Code generation failed: {}", e);
             process::exit(1);
         }
     };
     
-    // Now show details and save (c_code is in scope here)
     if show_details {
         println!("   ✅ C code generated successfully!");
         println!("   {} lines of C code", c_code.lines().count());
         
-        // Show included headers count
         let headers: Vec<&str> = c_code.lines()
             .filter(|line| line.starts_with("#include"))
             .collect();
         println!("   {} system headers included", headers.len());
     }
     
-    // Save C file
     let c_output_path = file.with_extension("c");
     
     if let Err(e) = fs::write(&c_output_path, &c_code) {
@@ -665,14 +675,12 @@ fn compile_source(
         println!("   Saved to: {}", c_output_path.display());
     }
     
-    // If --to-c, stop here
     if to_c_only {
         println!("\n✅ Conversion to C successful!");
         println!("   Output: {}", c_output_path.display());
         return;
     }
     
-    // STEP 5: Native Compilation
     if show_details {
         println!("\n_______________________________________");
         println!("GCC: Compiling to native executable...");
@@ -700,7 +708,6 @@ fn compile_source(
             if show_details {
                 println!("   ✅ Native compilation successful!");
                 
-                // Show file size if possible
                 if let Ok(metadata) = fs::metadata(&exe_output_path) {
                     let size_kb = metadata.len() / 1024;
                     println!("   Executable size: {} KB", size_kb);
@@ -714,7 +721,6 @@ fn compile_source(
         }
     }
     
-    // Clean up C file unless --keep-c
     if !args.keep_c {
         if let Err(_) = fs::remove_file(&c_output_path) {
             if show_details {
@@ -723,16 +729,13 @@ fn compile_source(
         }
     } 
     
-    // If this is a run command, execute the program
     if should_run {
         if show_details {
             println!("\n Running");
             println!("{}", "=".repeat(60));
         }
         
-        // Ensure we can find the executable
         let exec_path = if exe_output_path.parent().is_none() || exe_output_path.parent() == Some(Path::new("")) {
-            // If no directory specified, use ./
             Path::new("./").join(&exe_output_path)
         } else {
             exe_output_path.clone()
@@ -742,14 +745,12 @@ fn compile_source(
         
         match run_result {
             Ok(output) => {
-                // Print program output
                 print!("{}", String::from_utf8_lossy(&output.stdout));
                 
                 if !output.stderr.is_empty() {
                     eprint!("{}", String::from_utf8_lossy(&output.stderr));
                 }
                 
-                // Exit with program's exit code
                 if !output.status.success() {
                     process::exit(output.status.code().unwrap_or(1));
                 }
@@ -760,15 +761,13 @@ fn compile_source(
             }
         }
     } else {
-        // Just compiling - show final success message
         println!("\n✅ Compilation successful!");
-        if !to_c_only{
+        if !to_c_only {
             println!("   Executable: {}", exe_output_path.display());
         }
-        if args.keep_c || to_c_only{
+        if args.keep_c || to_c_only {
             println!("   C File: {}", c_output_path.display());
         }
-
     }
 }
 

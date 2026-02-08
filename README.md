@@ -1,6 +1,6 @@
 # MiniLang Compiler
 
-[![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/yourusername/minilang)
+[![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/heetabhanushali/minilang_compiler)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange)](https://www.rust-lang.org/)
 [![WebAssembly](https://img.shields.io/badge/wasm-ready-purple)](https://webassembly.org/)
 
@@ -15,9 +15,9 @@ The online playground compiles MiniLang to C using WebAssembly, then executes th
 - 10 second compilation timeout
 - Memory limits for safety
 
-**[Try MiniLang in your browser →](https://minilang-playground.vercel.app/)**
+**[Try MiniLang in your browser →](https://heetabhanushali.github.io/minilang_compiler/)**
 
-Experience the interactive playground with real-time compilation, AST visualization, and optimization statistics.
+Experience the interactive playground with real-time compilation, AST visualization, static analysis, and optimization statistics.
 
 ## Features
 
@@ -39,14 +39,20 @@ Experience the interactive playground with real-time compilation, AST visualizat
 - **Multiple Backends**: Compile to C or run directly via WebAssembly
 - **Interactive Debugging**: Step through compilation phases
 
+### Static Analysis
+- **Complexity Metrics**: Cyclomatic, Cognitive, Halstead, Nesting Depth, Fan-out
+- **Quality Ratings**: A/B/C/D/F grades per function based on complexity thresholds
+- **Actionable Warnings**: Suggestions to improve code maintainability
+- **JSON Output**: Machine-readable reports for CI/CD integration
+
 ## Quick Start
 
 ### Web Playground
 
-Visit the [minilang playground](https://minilang-playground.vercel.app/) to start coding immediately, or run locally:
+Visit the [MiniLang Playground](https://heetabhanushali.github.io/minilang_compiler/) to start coding immediately, or run locally:
 
 ```bash
-cd web
+cd playground
 python3 -m http.server 8000
 # Visit http://localhost:8000
 ```
@@ -58,26 +64,29 @@ python3 -m http.server 8000
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://github.com/heetabhanushali/minilang.git
+git clone https://github.com/heetabhanushali/minilang_compiler.git
 cd minilang_compiler
 cargo build --release
 
+# Install globally
+cargo install --path .
+
 # Run your first program
 echo 'func main() { display "Hello, MiniLang!"; }' > hello.mini
-cargo run --release -- run hello.mini
+minilang run hello.mini
 ```
 
 ## Language Syntax
 
 ### Hello World
-```minilang
+```
 func main() {
     display "Hello, World!";
 }
 ```
 
 ### Variables and Types
-```minilang
+```
 func main() {
     let x: int = 42;
     let pi: float = 3.14159;
@@ -91,7 +100,7 @@ func main() {
 ```
 
 ### Control Flow
-```minilang
+```
 func factorial(n: int) -> int {
     if n <= 1 {
         send 1;
@@ -100,14 +109,14 @@ func factorial(n: int) -> int {
 }
 
 func main() {
-    # Loops
+    # Loops with logical operators
     for i = 1; i <= 5; i = i + 1 {
         if i % 2 == 0 AND i != 4 {
             display "Even: ", i;
         }
     }
     
-    # Pattern: display sends output, send returns values
+    # display outputs to console, send returns values
     let result: int = factorial(5);
     display "5! = ", result;
 }
@@ -122,9 +131,10 @@ func main() {
 | `minilang compile <file>` | Compile to executable |
 | `minilang run <file>` | Compile and run immediately |
 | `minilang check <file>` | Type-check without compiling |
+| `minilang analyze <file>` | Run static analysis |
 | `minilang ast <file>` | Display Abstract Syntax Tree |
 | `minilang tokens <file>` | Display token stream |
-| `minilang stats <file>` | Show optimization statistics |
+| `minilang stats <file>` | Show compilation statistics |
 | `minilang clean` | Remove generated files |
 
 ### Options
@@ -135,6 +145,7 @@ func main() {
 | `-O, --opt <level>` | Optimization level (0-2) |
 | `-d, --detail` | Show compilation steps |
 | `--keep-c` | Keep intermediate C file |
+| `--json` | JSON output (for analyze) |
 
 ### Examples
 
@@ -145,12 +156,56 @@ minilang compile program.mini -O 2
 # Check for errors without compiling
 minilang check program.mini
 
+# Run static analysis
+minilang analyze program.mini
+
+# JSON output for CI/CD
+minilang analyze program.mini --json
+
 # View the AST
 minilang ast program.mini
 
-# See optimization statistics
+# See compilation statistics with timing
 minilang stats program.mini --time
 ```
+
+## Static Analysis
+
+MiniLang includes a built-in static analyzer that calculates complexity metrics for every function.
+
+### Metrics
+
+| Metric | What It Measures |
+|--------|-----------------|
+| **Cyclomatic Complexity** | Independent paths through code |
+| **Cognitive Complexity** | Human-perceived difficulty (SonarSource-style) |
+| **Halstead Metrics** | Volume, Difficulty, Effort based on operators/operands |
+| **Nesting Depth** | Maximum depth of nested blocks |
+| **Fan-out** | Number of distinct functions called |
+| **Lines of Code** | Non-empty, non-comment lines per function |
+
+### Rating System
+
+Each function receives a grade based on cyclomatic and cognitive complexity:
+
+| Rating | Cyclomatic | Cognitive | Meaning |
+|--------|-----------|-----------|---------|
+| **A** | 1 – 5 | 0 – 5 | Excellent — simple and maintainable |
+| **B** | 6 – 10 | 6 – 10 | Good — acceptable complexity |
+| **C** | 11 – 20 | 11 – 15 | Moderate — consider refactoring |
+| **D** | 21 – 50 | 16 – 30 | Complex — should be refactored |
+| **F** | 51+ | 31+ | Very complex — must be refactored |
+
+### Warnings
+
+The analyzer flags potential issues:
+- Cyclomatic complexity > 10
+- Cognitive complexity > 15
+- Nesting depth > 3
+- Parameters > 5
+- Fan-out > 8
+- LOC > 50
+
 
 ## Architecture
 
@@ -159,6 +214,8 @@ Source (.mini) → Lexer → Parser → Type Checker → Optimizer → Code Gen 
                    ↓        ↓          ↓            ↓           ↓
                 Tokens    AST    Type Info    Optimized    Generated
                                               AST          C Code
+                                                ↓
+                                            Analyzer → Metrics Report
 ```
 
 ### Project Structure
@@ -166,23 +223,34 @@ Source (.mini) → Lexer → Parser → Type Checker → Optimizer → Code Gen 
 ```
 minilang_compiler/
 ├── src/
-│   ├── main.rs           
-│   ├── lib.rs            
-│   ├── lexer.rs          
-│   ├── parser.rs         
-│   ├── ast.rs            
-│   ├── type_checker.rs   
-│   ├── optimizer.rs      
-│   ├── codegen.rs        
-│   ├── symbol_table.rs   
-│   ├── errors.rs         
-│   └── cli.rs            
+│   ├── main.rs           # CLI entry point
+│   ├── lib.rs            # Library exports
+│   ├── cli.rs            # Command-line interface
+│   ├── lexer.rs          # Tokenization
+│   ├── parser.rs         # AST construction
+│   ├── ast.rs            # AST definitions
+│   ├── type_checker.rs   # Semantic analysis
+│   ├── symbol_table.rs   # Scope management
+│   ├── optimizer.rs      # Optimization passes
+│   ├── codegen.rs        # C code generation
+│   ├── errors.rs         # Error types
+│   ├── wasm.rs           # WebAssembly bindings
+│   └── analyzer/         # Static analysis
+│       ├── mod.rs        # Orchestrator & display
+│       ├── basic.rs      # LOC, statements, params
+│       ├── cyclomatic.rs # Cyclomatic complexity
+│       ├── cognitive.rs  # Cognitive complexity
+│       ├── nesting.rs    # Nesting depth
+│       ├── halstead.rs   # Halstead metrics
+│       └── fanout.rs     # Fan-out analysis
 ├── tests/                # Integration tests
-├── web/
+├── examples/             # Example programs
+├── playground/           # Web playground
 │   ├── index.html        
 │   ├── script.js         
 │   ├── styles.css        
-│   └── examples/         # Example programs
+│   ├── pkg/              # WASM build output
+│   └── examples/         # Playground examples
 ├── Cargo.toml
 └── README.md
 ```
@@ -193,14 +261,14 @@ minilang_compiler/
 # Run all tests
 cargo test
 
+# Run analyzer tests (115 tests)
+cargo test analyzer
+
 # Run specific test suite
 cargo test --test integration_tests
 
 # Run with verbose output
 cargo test -- --nocapture
-
-# Run benchmarks
-cargo bench
 ```
 
 ## WebAssembly Build
@@ -215,20 +283,21 @@ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 wasm-pack build --target web --out-dir web/pkg
 
 # Serve locally
-cd web && python3 -m http.server
+cd playground && python3 -m http.server 8000
 ```
 
 ## Acknowledgments
 
-- **Piston API** for code execution engine for the web playground
-- **Rust** for the incredible compiler infrastructure
-- **Logos** for lightning-fast lexical analysis
-- **Miette** for beautiful error reporting
-- **Monaco Editor** for the web-based code editor
-- **wasm-pack** for seamless WebAssembly integration
+- **Piston API** — Code execution engine for the web playground
+- **Rust** — Incredible compiler infrastructure
+- **Logos** — Lightning-fast lexical analysis
+- **Miette** — Beautiful error reporting
+- **Monaco Editor** — Web-based code editor
+- **wasm-pack** — Seamless WebAssembly integration
 
 ## Contact
 
-- Email: heetabhaushali@gmail.com
+- **Email**: heetabhanushali@gmail.com
+- **GitHub**: [@heetabhanushali](https://github.com/heetabhanushali)
 
 ---

@@ -14,6 +14,7 @@ let currentOptLevel = 0;
 let wasmModule = null;
 let wasmCompile = null;
 let compileTimeout = null;
+let wasmAnalyze = null;
 const PISTON_API = 'https://emkc.org/api/v2/piston/execute';
 const COMPILE_DEBOUNCE_MS = 300;
 const defaultCode = `# Welcome to MiniLang!
@@ -302,6 +303,38 @@ function initializeOutputTabs() {
 }
 
 // ============================================
+// Show/Hide Output Tabs Based on Mode
+// ============================================
+function setOutputMode(mode) {
+    // mode: 'compile' | 'run' | 'analyze' | 'all'
+    const allTabs = document.querySelectorAll('.output-tab-btn');
+    
+    allTabs.forEach(tab => {
+        const tabName = tab.dataset.output;
+        
+        if (mode === 'analyze') {
+            // Only show analyze tab
+            if (tabName === 'analyze') {
+                tab.style.display = '';
+                tab.click();
+            } else {
+                tab.style.display = 'none';
+            }
+        } else if (mode === 'all') {
+            // Show everything
+            tab.style.display = '';
+        } else {
+            // compile / run — show everything except analyze
+            if (tabName === 'analyze') {
+                tab.style.display = 'none';
+            } else {
+                tab.style.display = '';
+            }
+        }
+    });
+}
+
+// ============================================
 // Optimization Level
 // ============================================
 function initializeOptimizationLevel() {
@@ -334,6 +367,9 @@ async function compileCode() {
         showError('Compiler not loaded yet. Please wait a moment and try again.');
         return;
     }
+
+    // Show compile/run tabs, hide analyze
+    setOutputMode('compile');
 
     const compileBtn = document.getElementById('compile-btn');
     const originalHTML = compileBtn.innerHTML;
@@ -374,6 +410,9 @@ async function runCode() {
         showError('Compiler not loaded yet. Please wait a moment and try again.');
         return;
     }
+
+    // Show compile/run tabs, hide analyze
+    setOutputMode('run');
 
     const runBtn = document.getElementById('run-btn');
     const originalHTML = runBtn.innerHTML;
@@ -1023,6 +1062,272 @@ function showError(message) {
 }
 
 // ============================================
+// Analyze Code
+// ============================================
+async function analyzeCode() {
+    const code = editor.getValue();
+    
+    if (!code.trim()) {
+        showAnalyzeError('Please write some code first!');
+        return;
+    }
+
+    if (!wasmAnalyze) {
+        showAnalyzeError('Analyzer not loaded yet. Please wait a moment and try again.');
+        return;
+    }
+
+    // Show only analyze tab
+    setOutputMode('analyze');
+
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const originalHTML = analyzeBtn.innerHTML;
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = `
+        <svg class="animate-spin w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span>Analyzing...</span>
+    `;
+
+    try {
+        const resultJson = wasmAnalyze(code);
+        const result = JSON.parse(resultJson);
+        
+        displayAnalysisResult(result);
+    } catch (error) {
+        showAnalyzeError(error.message);
+        console.error('Analysis error:', error);
+    } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = originalHTML;
+    }
+}
+
+// ============================================
+// Display Analysis Result
+// ============================================
+function displayAnalysisResult(result) {
+    const display = document.getElementById('analyze-display');
+    
+    if (!result.success) {
+        const errorContent = result.error_ansi 
+            ? ansiToHtml(result.error_ansi) 
+            : escapeHtml(result.error || 'Unknown error');
+        
+        display.innerHTML = `
+            <div class="message-error mb-4">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <span class="font-semibold">Analysis Failed</span>
+            </div>
+            <div class="error-console">
+                <pre>${errorContent}</pre>
+            </div>
+        `;
+        return;
+    }
+
+    const report = result.report;
+    if (!report) {
+        display.innerHTML = `<div class="text-center py-8 dark:text-slate-400 text-slate-600">No analysis data available</div>`;
+        return;
+    }
+
+    const totals = report.program_totals;
+    
+    // Build HTML
+    let html = `
+        <!-- Overall Rating Banner -->
+        <div class="analyze-banner analyze-banner-${totals.overall_rating.toLowerCase()}">
+            <div class="analyze-banner-rating">
+                <span class="analyze-banner-grade">${totals.overall_rating}</span>
+                <span class="analyze-banner-label">${getRatingLabel(totals.overall_rating)}</span>
+            </div>
+            <div class="analyze-banner-stats">
+                <div class="analyze-banner-stat">
+                    <span class="value">${totals.total_functions}</span>
+                    <span class="label">Functions</span>
+                </div>
+                <div class="analyze-banner-stat">
+                    <span class="value">${totals.total_loc}</span>
+                    <span class="label">LOC</span>
+                </div>
+                <div class="analyze-banner-stat">
+                    <span class="value">${totals.avg_cyclomatic.toFixed(1)}</span>
+                    <span class="label">Avg Cyclo</span>
+                </div>
+                <div class="analyze-banner-stat">
+                    <span class="value">${totals.avg_cognitive.toFixed(1)}</span>
+                    <span class="label">Avg Cog</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Functions -->
+        <div class="analyze-functions-header">
+            <span>Function Details</span>
+            <span class="analyze-functions-count">${report.functions.length} function${report.functions.length !== 1 ? 's' : ''}</span>
+        </div>
+    `;
+
+    // Function Cards
+    for (const func of report.functions) {
+        const warnings = getFunctionWarnings(func);
+        const cycloPercent = Math.min((func.cyclomatic_complexity / 20) * 100, 100);
+        const cogPercent = Math.min((func.cognitive_complexity / 25) * 100, 100);
+        
+        html += `
+            <div class="analyze-func-card">
+                <div class="analyze-func-header">
+                    <div class="analyze-func-name">
+                        <span class="analyze-func-badge analyze-badge-${func.rating.toLowerCase()}">${func.rating}</span>
+                        <code>${escapeHtml(func.name)}</code>
+                        <span class="analyze-func-params">(${func.parameter_count} param${func.parameter_count !== 1 ? 's' : ''})</span>
+                    </div>
+                    <div class="analyze-func-loc">${func.loc} lines</div>
+                </div>
+                
+                <div class="analyze-func-metrics">
+                    <div class="analyze-func-metric">
+                        <div class="analyze-func-metric-header">
+                            <span>Cyclomatic</span>
+                            <span class="${getComplexityClass(func.cyclomatic_complexity, 'cyclomatic')}">${func.cyclomatic_complexity}</span>
+                        </div>
+                        <div class="analyze-progress">
+                            <div class="analyze-progress-fill ${getBarColorClass(func.cyclomatic_complexity, 'cyclomatic')}" style="width: ${cycloPercent}%"></div>
+                        </div>
+                    </div>
+                    <div class="analyze-func-metric">
+                        <div class="analyze-func-metric-header">
+                            <span>Cognitive</span>
+                            <span class="${getComplexityClass(func.cognitive_complexity, 'cognitive')}">${func.cognitive_complexity}</span>
+                        </div>
+                        <div class="analyze-progress">
+                            <div class="analyze-progress-fill ${getBarColorClass(func.cognitive_complexity, 'cognitive')}" style="width: ${cogPercent}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analyze-func-details">
+                    <div class="analyze-detail">
+                        <span class="analyze-detail-value">${func.statement_count}</span>
+                        <span class="analyze-detail-label">Statements</span>
+                    </div>
+                    <div class="analyze-detail">
+                        <span class="analyze-detail-value">${func.max_nesting_depth}</span>
+                        <span class="analyze-detail-label">Max Depth</span>
+                    </div>
+                    <div class="analyze-detail">
+                        <span class="analyze-detail-value">${func.fan_out}</span>
+                        <span class="analyze-detail-label">Fan-out</span>
+                    </div>
+                    <div class="analyze-detail">
+                        <span class="analyze-detail-value">${func.halstead.volume.toFixed(0)}</span>
+                        <span class="analyze-detail-label">Volume</span>
+                    </div>
+                </div>
+                
+                ${warnings.length > 0 ? `
+                    <div class="analyze-func-warnings">
+                        ${warnings.map(w => `
+                            <div class="analyze-func-warning">
+                                <span class="warning-icon">⚠</span>
+                                <span>${escapeHtml(w)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    display.innerHTML = html;
+}
+
+function getRatingLabel(rating) {
+    const labels = {
+        'A': 'Excellent',
+        'B': 'Good',
+        'C': 'Moderate',
+        'D': 'Complex',
+        'F': 'Very Complex'
+    };
+    return labels[rating] || 'Unknown';
+}
+
+function getComplexityClass(value, type) {
+    if (type === 'cyclomatic') {
+        if (value <= 5) return 'complexity-good';
+        if (value <= 10) return 'complexity-ok';
+        if (value <= 20) return 'complexity-warning';
+        return 'complexity-danger';
+    } else { // cognitive
+        if (value <= 5) return 'complexity-good';
+        if (value <= 10) return 'complexity-ok';
+        if (value <= 15) return 'complexity-warning';
+        return 'complexity-danger';
+    }
+}
+
+function getBarColorClass(value, type) {
+    if (type === 'cyclomatic') {
+        if (value <= 5) return 'bar-good';
+        if (value <= 10) return 'bar-ok';
+        if (value <= 20) return 'bar-warning';
+        return 'bar-danger';
+    } else {
+        if (value <= 5) return 'bar-good';
+        if (value <= 10) return 'bar-ok';
+        if (value <= 15) return 'bar-warning';
+        return 'bar-danger';
+    }
+}
+
+function getFunctionWarnings(func) {
+    const warnings = [];
+    
+    if (func.cyclomatic_complexity > 10) {
+        warnings.push(`High cyclomatic complexity (${func.cyclomatic_complexity}). Consider breaking into smaller functions.`);
+    }
+    
+    if (func.cognitive_complexity > 15) {
+        warnings.push(`High cognitive complexity (${func.cognitive_complexity}). This function may be hard to understand.`);
+    }
+    
+    if (func.max_nesting_depth > 3) {
+        warnings.push(`Deep nesting (depth ${func.max_nesting_depth}). Consider using early returns.`);
+    }
+    
+    if (func.parameter_count > 5) {
+        warnings.push(`Too many parameters (${func.parameter_count}). Consider grouping related parameters.`);
+    }
+    
+    if (func.fan_out > 8) {
+        warnings.push(`High fan-out (${func.fan_out}). This function depends on many others.`);
+    }
+    
+    if (func.loc > 50) {
+        warnings.push(`Long function (${func.loc} LOC). Consider splitting into smaller functions.`);
+    }
+    
+    return warnings;
+}
+
+function showAnalyzeError(message) {
+    const display = document.getElementById('analyze-display');
+    display.innerHTML = `
+        <div class="message-error">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>${escapeHtml(message)}</span>
+        </div>
+    `;
+}
+
+// ============================================
 // Loading Overlay
 // ============================================
 function showLoading(show) {
@@ -1065,7 +1370,18 @@ function clearEditor() {
         document.getElementById('token-count').textContent = '0 tokens';
         
         // Clear AST tab
-        document.getElementById('ast-display').textContent = '// AST will appear here after compilation';
+        document.getElementById('ast-display').innerHTML = '<div class="ast-placeholder">// AST will appear here after compilation</div>';
+        
+        // Clear Analyze tab
+        document.getElementById('analyze-display').innerHTML = `
+            <div class="text-center py-12 dark:text-slate-500 text-slate-400">
+                <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <p class="text-sm">Click "Analyze" button to run static analysis</p>
+                <p class="text-xs mt-2 dark:text-slate-600 text-slate-400">Calculates complexity metrics for your code</p>
+            </div>
+        `;
         
         // Reset stats
         updateStats({
@@ -1074,6 +1390,12 @@ function clearEditor() {
             constants_propagated: 0,
             strength_reductions: 0
         });
+
+        // Show all tabs except analyze (default state)
+        setOutputMode('all');
+        
+        // Switch to result tab
+        document.querySelector('.output-tab-btn[data-output="result"]').click();
     }
 }
 
@@ -1219,6 +1541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         wasmModule = wasm;
         wasmCompile = wasm.compile;
+        wasmAnalyze = wasm.analyze;
     } catch (error) {
         console.error('Failed to load WASM:', error);
         alert('Failed to load compiler. Please refresh the page.');
@@ -1243,6 +1566,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runBtn = document.getElementById('run-btn');
     if (runBtn) {
         runBtn.addEventListener('click', runCode);
+    }
+    const analyzeBtn = document.getElementById('analyze-btn');
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', analyzeCode);
     }
     document.getElementById('clear-btn').addEventListener('click', clearEditor);
     document.getElementById('download-source-btn').addEventListener('click', downloadSource);

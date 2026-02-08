@@ -10,6 +10,7 @@ pub mod type_checker;
 pub mod codegen;
 pub mod cli;
 pub mod optimizer;
+pub mod analyzer;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
@@ -23,3 +24,4 @@ pub use symbol_table::{SymbolTable, Symbol, SymbolType};
 pub use type_checker::TypeChecker;
 pub use codegen::CodeGenerator;
 pub use optimizer::{Optimizer, OptimizationStats};
+pub use analyzer::{AnalysisReport, FunctionMetrics, analyze_program, display_report};

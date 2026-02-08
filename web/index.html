@@ -229,19 +229,19 @@
                             </svg>
                             <span>Run</span>
                         </button>
+
+                        <button id="analyze-btn" class="analyze-button flex-1 sm:flex-none">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            <span>Analyze</span>
+                        </button>
                         
                         <button id="clear-btn" class="secondary-button">
                             <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
                             <span class="hidden sm:inline">Clear</span>
-                        </button>
-                        
-                        <button id="download-source-btn" class="secondary-button">
-                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            <span class="hidden lg:inline">Source</span>
                         </button>
                     </div>
                 </div>
@@ -262,7 +262,14 @@
                                 </div>
                                 <span class="ml-2 text-xs lg:text-sm font-mono font-medium text-primary">main.mini</span>
                             </div>
-                            <span class="text-xs dark:text-slate-500 text-slate-400 hidden sm:block">MiniLang Editor</span>
+                            <div class="flex items-center space-x-2">
+                                <button id="download-source-btn" class="editor-header-btn" title="Download .mini file">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    <span class="hidden sm:inline">Download</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div id="editor" class="editor-container"></div>
@@ -293,6 +300,10 @@
                                 <button class="output-tab-btn" data-output="stats">
                                     <span class="hidden sm:inline">Stats</span>
                                     <span class="sm:hidden">📊</span>
+                                </button>
+                                <button class="output-tab-btn" data-output="analyze">
+                                    <span class="hidden sm:inline">Code Quality</span>
+                                    <span class="sm:hidden">🏆</span>
                                 </button>
                             </div>
                         </div>
@@ -441,6 +452,25 @@
                             </div>
                         </div>
 
+                        <!-- Analyze Tab -->
+                        <div id="output-analyze" class="output-content">
+                            <div class="p-4 lg:p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-primary">Static Analysis</h3>
+                                    <span class="text-xs dark:text-slate-500 text-slate-400">Complexity Metrics</span>
+                                </div>
+                                <div id="analyze-display" class="space-y-4" style="max-height: 500px; overflow-y: auto;">
+                                    <div class="text-center py-12 dark:text-slate-500 text-slate-400">
+                                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                        </svg>
+                                        <p class="text-sm">Click "Analyze" button to run static analysis</p>
+                                        <p class="text-xs mt-2 dark:text-slate-600 text-slate-400">Calculates complexity metrics for your code</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 
@@ -547,6 +577,63 @@ for i = 0; i < 10; i = i + 1 {
                             </div>
                         </div>
                     </section>
+
+                    <!-- Static Analysis -->
+                    <section>
+                        <h3 class="text-xl font-bold text-primary mb-4">Static Analysis</h3>
+                        
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Cyclomatic Complexity</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Counts independent paths through your code</p>
+                                <div class="mt-2 text-xs font-mono space-y-1">
+                                    <div class="flex justify-between"><span class="text-primary/50">A (1-5)</span><span class="dark:text-slate-500 text-slate-400">Simple</span></div>
+                                    <div class="flex justify-between"><span class="text-primary/65">B (6-10)</span><span class="dark:text-slate-500 text-slate-400">Moderate</span></div>
+                                    <div class="flex justify-between"><span class="text-primary/80">C (11-20)</span><span class="dark:text-slate-500 text-slate-400">Complex</span></div>
+                                    <div class="flex justify-between"><span class="text-primary">D/F (21+)</span><span class="dark:text-slate-500 text-slate-400">Refactor!</span></div>
+                                </div>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Cognitive Complexity</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Measures how hard code is for humans to understand</p>
+                                <div class="mt-2 text-xs font-mono space-y-1">
+                                    <div class="flex justify-between"><span class="text-primary/50">A (0-5)</span><span class="dark:text-slate-500 text-slate-400">Easy</span></div>
+                                    <div class="flex justify-between"><span class="text-primary/65">B (6-10)</span><span class="dark:text-slate-500 text-slate-400">Readable</span></div>
+                                    <div class="flex justify-between"><span class="text-primary/80">C (11-15)</span><span class="dark:text-slate-500 text-slate-400">Moderate</span></div>
+                                    <div class="flex justify-between"><span class="text-primary">D/F (16+)</span><span class="dark:text-slate-500 text-slate-400">Hard to follow</span></div>
+                                </div>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Halstead Metrics</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Measures complexity through operators and operands</p>
+                                <div class="mt-2 text-xs font-mono space-y-1">
+                                    <div class="flex justify-between"><span class="dark:text-slate-300 text-slate-700">Volume</span><span class="dark:text-slate-500 text-slate-400">Program size</span></div>
+                                    <div class="flex justify-between"><span class="dark:text-slate-300 text-slate-700">Difficulty</span><span class="dark:text-slate-500 text-slate-400">Error proneness</span></div>
+                                    <div class="flex justify-between"><span class="dark:text-slate-300 text-slate-700">Effort</span><span class="dark:text-slate-500 text-slate-400">Dev effort</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Nesting Depth</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Maximum depth of nested control flow</p>
+                                <code class="text-xs text-primary mt-2 block font-mono">Depth &gt; 3 → warning</code>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Fan-out</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Number of distinct functions called</p>
+                                <code class="text-xs text-primary mt-2 block font-mono">Fan-out &gt; 8 → warning</code>
+                            </div>
+                            <div class="dark:bg-slate-900/50 bg-slate-50 p-4 rounded-lg border dark:border-slate-800 border-slate-200">
+                                <h4 class="font-semibold text-accent mb-2">Lines & Statements</h4>
+                                <p class="text-xs dark:text-slate-400 text-slate-600">Basic size metrics per function</p>
+                                <code class="text-xs text-primary mt-2 block font-mono">LOC &gt; 50 → warning</code>
+                            </div>
+                        </div>
+
+                    </section>
+
                 </div>
             </div>
         </div>
@@ -573,6 +660,7 @@ for i = 0; i < 10; i = i + 1 {
                                 <li>✓ Compiles to C (near-native performance)</li>
                                 <li>✓ Beautiful error messages</li>
                                 <li>✓ Runs in browser via WebAssembly</li>
+                                <li>✓ Built in static analyzer</li>
                             </ul>
                         </div>
 
@@ -590,21 +678,65 @@ for i = 0; i < 10; i = i + 1 {
                     </div>
 
                     <div class="dark:bg-slate-900/50 bg-slate-50 p-6 rounded-lg border dark:border-slate-800 border-slate-200">
-                        <h3 class="text-lg font-bold text-primary mb-3">Compiler Pipeline</h3>
-                        <div class="flex flex-wrap items-center gap-2 text-sm">
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Source Code</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Lexer</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Parser</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Type Checker</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Optimizer</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">C Codegen</span>
-                            <span class="text-primary font-bold">→</span>
-                            <span class="px-3 py-1 dark:bg-primary/20 bg-primary/25 text-primary rounded-full font-semibold border dark:border-primary/30 border-primary/40">Executable</span>
+                        <h3 class="text-lg font-bold text-primary mb-4">MiniLang Pipeline</h3>
+                        
+                        <!-- Main Pipeline -->
+                        <div class="pipeline-container">
+                            <div class="pipeline-row">
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">Source</span>
+                                    <span class="pipeline-sublabel">.mini</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">Lexer</span>
+                                    <span class="pipeline-output">↓</span>
+                                    <span class="pipeline-output">Tokens</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage-group">
+                                    <div class="pipeline-stage">
+                                        <span class="pipeline-label">Parser</span>
+                                        <span class="pipeline-output">↓</span>
+                                        <span class="pipeline-output">AST</span>
+                                    </div>
+                                    <div class="pipeline-branch-down">
+                                        <span class="pipeline-branch-arrow"> ↓ </span>
+                                        <div class="pipeline-stage pipeline-analyzer">
+                                            <span class="pipeline-label">Analyzer</span>
+                                            <span class="pipeline-sublabel">Metrics</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">Type Checker</span>
+                                    <span class="pipeline-output">↓</span>
+                                    <span class="pipeline-output">Type Info</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">Optimizer</span>
+                                    <span class="pipeline-output">↓</span>
+                                    <span class="pipeline-output">Optimized AST</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">Code Gen</span>
+                                    <span class="pipeline-output">↓</span>
+                                    <span class="pipeline-output">C Code</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage">
+                                    <span class="pipeline-label">GCC</span>
+                                    <span class="pipeline-sublabel">Compile</span>
+                                </div>
+                                <span class="pipeline-arrow">→</span>
+                                <div class="pipeline-stage pipeline-final">
+                                    <span class="pipeline-label">Executable</span>
+                                </div>
+                            </div>
+                            
                         </div>
                     </div>
 

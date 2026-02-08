@@ -1,0 +1,42 @@
+func add(a: int, b: int) -> int {
+    send a + b;
+}
+
+func max(a: int, b: int) -> int {
+    if a > b {
+        send a;
+    } else {
+        send b;
+    }
+}
+
+func fizzbuzz(n: int) {
+    let i: int = 1;
+    while i <= n {
+        if i % 15 == 0 {
+            display "FizzBuzz";
+        } else {
+            if i % 3 == 0 {
+                display "Fizz";
+            } else {
+                if i % 5 == 0 {
+                    display "Buzz";
+                } else {
+                    display i;
+                }
+            }
+        }
+        i = i + 1;
+    }
+}
+
+func main() {
+    let result: int = add(3, 4);
+    display "3 + 4 = ", result;
+
+    let bigger: int = max(10, 20);
+    display "max(10, 20) = ", bigger;
+
+    display "FizzBuzz 1 to 20:";
+    fizzbuzz(20);
+}

@@ -370,3 +370,62 @@ pub fn compile(source: &str, opt_level: u8) -> String {
         ast: Some(ast_display),
     }).unwrap()
 }
+
+#[wasm_bindgen]
+pub fn analyze(source: &str) -> String {
+    // Tokenize
+    let mut lexer = Lexer::new(source);
+    let tokens = match lexer.tokenize() {
+        Ok(t) => t,
+        Err(e) => {
+            let error_ansi = render_lexer_error(e.clone(), source);
+            return serde_json::to_string(&AnalyzeResult {
+                success: false,
+                report: None,
+                error: Some(format!("{:?}", e)),
+                error_ansi: Some(error_ansi),
+            }).unwrap();
+        }
+    };
+
+    // Parse
+    let mut parser = Parser::new(tokens, source.to_string());
+    let program = match parser.parse_program() {
+        Ok(p) => p,
+        Err(e) => {
+            let error_ansi = render_parser_error(e.clone(), source);
+            return serde_json::to_string(&AnalyzeResult {
+                success: false,
+                report: None,
+                error: Some(format!("{:?}", e)),
+                error_ansi: Some(error_ansi),
+            }).unwrap();
+        }
+    };
+
+    // Type check — report errors but still analyze
+    let mut type_checker = crate::TypeChecker::new();
+    let type_error = if let Err(errors) = type_checker.check_program(&program) {
+        Some(render_semantic_errors(errors, source))
+    } else {
+        None
+    };
+
+    // Analyze
+    let report = crate::analyzer::analyze_program(&program, source);
+
+    serde_json::to_string(&AnalyzeResult {
+        success: true,
+        report: Some(report),
+        error: type_error.clone(),
+        error_ansi: type_error,
+    }).unwrap()
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AnalyzeResult {
+    pub success: bool,
+    pub report: Option<crate::analyzer::AnalysisReport>,
+    pub error: Option<String>,
+    pub error_ansi: Option<String>,
+}

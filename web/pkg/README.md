@@ -2,12 +2,18 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-success)](https://github.com/yourusername/minilang)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 [![WebAssembly](https://img.shields.io/badge/wasm-ready-purple)](https://webassembly.org/)
 
 A **statically-typed, compiled programming language** built entirely in Rust, featuring a unique syntax with Pascal-style logical operators (`AND`/`OR`/`NOT`) and a complete compiler pipeline from source to native executable.
 
-## Live Demo
+## Web Playground
+
+The online playground compiles MiniLang to C using WebAssembly, then executes the generated C code via the [Piston API](https://emkc.org/api/v2/piston/runtimes) — a free, open-source code execution engine.
+
+**Note:** Code execution requires an internet connection. The Piston API runs your code in a sandboxed environment with:
+- 5 second execution timeout
+- 10 second compilation timeout
+- Memory limits for safety
 
 **[Try MiniLang in your browser →](https://minilang-playground.vercel.app/)**
 
@@ -214,6 +220,7 @@ cd web && python3 -m http.server
 
 ## Acknowledgments
 
+- **Piston API** for code execution engine for the web playground
 - **Rust** for the incredible compiler infrastructure
 - **Logos** for lightning-fast lexical analysis
 - **Miette** for beautiful error reporting
